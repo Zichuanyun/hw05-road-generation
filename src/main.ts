@@ -1,4 +1,4 @@
-import {vec3} from 'gl-matrix';
+import {vec3, vec2} from 'gl-matrix';
 import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
 import Square from './geometry/Square';
@@ -11,6 +11,7 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import LSystem from './lsystem/LSystem'
 import Mesh from './geometry/Mesh';
 import TerrainInfo from './TerrainInfo';
+import Plane from './geometry/Plane';
 var hash = require('object-hash');
 
 let square: Square;
@@ -20,6 +21,9 @@ let lsystem: LSystem = new LSystem();
 let longCube: LongCube;
 let branchCylinder: Mesh;
 let skullMesh: Mesh;
+let plane: Plane;
+let scale: number = 100;
+let ti: TerrainInfo; 
 
 function guiChangeCallback() {
   console.log("gui changed!");
@@ -59,6 +63,12 @@ function loadScene() {
   branchCylinder.create();
   skullMesh = new Mesh(skullString, vec3.fromValues(0, 0, 0));
   skullMesh.create();
+
+
+  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 13, ti);
+  plane.create();
+  plane.setNumInstances(1);
+
   guiChangeCallback(); // lsystem compute here
   updateBuffer();
 }
@@ -75,23 +85,23 @@ function updateBuffer() {
   let fDepths: Float32Array = new Float32Array(lsystem.fDepthArray);
   skullMesh.setInstanceVBOs(fTranslates, fRotMats, fDepths);
   skullMesh.setNumInstances(fDepths.length);
-  console.log(fDepths.length);
 }
 
 function main() {
-  let ti: TerrainInfo = new TerrainInfo(3.2, 1.0);
-  
-  for (var i = 0; i < 0.3; i = i + 0.1) {
-    for (var j = 0; j < 0.3; j = j + 0.1) {
-      console.log(ti.randomVec2F1(i, j));
-    }
-  }
 
-  for (var i = 0; i < 0.3; i = i + 0.05) {
-    for (var j = 0; j < 0.3; j = j + 0.05) {
-      console.log(ti.randomVec2F1(i, j));
-    }
-  }
+  ti = new TerrainInfo(3.2, 1.0);
+
+  // for (var i = 0; i < 0.3; i = i + 0.1) {
+  //   for (var j = 0; j < 0.3; j = j + 0.1) {
+  //     console.log(ti.randomVec2F1(i, j));
+  //   }
+  // }
+
+  // for (var i = 0; i < 0.3; i = i + 0.05) {
+  //   for (var j = 0; j < 0.3; j = j + 0.05) {
+  //     console.log(ti.randomVec2F1(i, j));
+  //   }
+  // }
   // Initial display for framerate
   const stats = Stats();
   stats.setMode(0);
@@ -140,14 +150,14 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/instanced-frag.glsl')),
   ]);
 
-  const instancedFlowerShader = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, require('./shaders/my-flower-instanced-vert.glsl')),
-    new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
-  ]);
-
   const flat = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/flat-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/flat-frag.glsl')),
+  ]);
+
+  const lambert = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/basic-transform-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
   ]);
 
   // This function will be called every frame
@@ -156,17 +166,16 @@ function main() {
     // console.log(camera.position);
     // console.log(camera.forward);
     stats.begin();
+    lambert.setTime(time);
     instancedShader.setTime(time);
     flat.setTime(time++);
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     renderer.render(camera, flat, [screenQuad]);
-    renderer.render(camera, instancedShader, [
-      branchCylinder,
+    renderer.render(camera, lambert, [
+      plane,
     ]);
-    renderer.render(camera, instancedFlowerShader, [
-      skullMesh,
-    ]);
+
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

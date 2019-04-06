@@ -22,6 +22,7 @@ class ShaderProgram {
   prog: WebGLProgram;
 
   attrPos: number;
+  // attrPosNI: number; // non instanced pos
   attrNor: number;
   attrCol: number; // This time, it's an instanced rendering attribute, so each particle can have a unique color. Not per-vertex, but per-instance.
   attrTranslate: number; // Used in the vertex shader during instanced rendering to offset the vertex positions to the particle's drawn position.
@@ -53,7 +54,7 @@ class ShaderProgram {
 
     this.attrPos = gl.getAttribLocation(this.prog, "vs_Pos");
     this.attrCol = gl.getAttribLocation(this.prog, "vs_Col");
-    this.attrNor = gl.getAttribLocation(this.prog, "vs_Normal");
+    this.attrNor = gl.getAttribLocation(this.prog, "vs_Nor");
     this.attrTranslate = gl.getAttribLocation(this.prog, "vs_Translate");
     this.attrUV = gl.getAttribLocation(this.prog, "vs_UV");
     this.attrForward = gl.getAttribLocation(this.prog, "vs_Forward");
@@ -167,7 +168,7 @@ class ShaderProgram {
     if (this.attrUV != -1 && d.bindUV()) {
       gl.enableVertexAttribArray(this.attrUV);
       gl.vertexAttribPointer(this.attrUV, 2, gl.FLOAT, false, 0, 0);
-      gl.vertexAttribDivisor(this.attrUV, 0); // Advance 1 index in pos VBO for each vertex
+      gl.vertexAttribDivisor(this.attrUV, 0);
     }
 
     if (this.attrTranslate != -1 && d.bindTranslate()) {
