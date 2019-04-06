@@ -10,6 +10,9 @@ class Mesh extends Drawable {
   colors: Float32Array;
   uvs: Float32Array;
   center: vec4;
+  translates: Float32Array;
+  depths: Float32Array;
+  rotQuats: Float32Array;
 
   objString: string;
 
@@ -31,13 +34,19 @@ class Mesh extends Drawable {
     //posTemp = loadedMesh.vertices;
     for (var i = 0; i < loadedMesh.vertices.length; i++) {
       posTemp.push(loadedMesh.vertices[i]);
+      // loadedMesh only has v3 pos, so push 1.0
       if (i % 3 == 2) posTemp.push(1.0);
     }
 
     for (var i = 0; i < loadedMesh.vertexNormals.length; i++) {
       norTemp.push(loadedMesh.vertexNormals[i]);
+      // loadedMesh only has v3 normal, so push 0.0
       if (i % 3 == 2) norTemp.push(0.0);
     }
+
+    // for (var i = 0; i < norTemp.length; i = i + 4) {
+    //   console.log(norTemp[i] + " " + norTemp[i+1] + " " + norTemp[i+2] + " " + norTemp[i+3]);
+    // }
 
     uvsTemp = loadedMesh.textures;
     idxTemp = loadedMesh.indices;
@@ -59,6 +68,11 @@ class Mesh extends Drawable {
     this.generateUV();
     this.generateCol();
 
+    // instanced
+    this.generateTranslate();
+    this.generateDepth();
+    this.generateRotMat();
+
     this.count = this.indices.length;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.bufIdx);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
@@ -77,6 +91,24 @@ class Mesh extends Drawable {
 
     console.log(`Created Mesh from OBJ`);
     this.objString = ""; // hacky clear
+  }
+
+  setInstanceVBOs(translates: Float32Array, rotMats: Float32Array, depths: Float32Array) {
+    this.translates = translates;
+    this.rotQuats = rotMats;
+    this.depths = depths;
+
+    // translation
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufTranslate);
+    gl.bufferData(gl.ARRAY_BUFFER, this.translates, gl.STATIC_DRAW);
+
+    // rotation quat
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotQuat);
+    gl.bufferData(gl.ARRAY_BUFFER, this.rotQuats, gl.STATIC_DRAW);
+
+    // recursion depth
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufDepth);
+    gl.bufferData(gl.ARRAY_BUFFER, this.depths, gl.STATIC_DRAW);
   }
 };
 

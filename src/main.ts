@@ -3,50 +3,77 @@ import * as Stats from 'stats-js';
 import * as DAT from 'dat-gui';
 import Square from './geometry/Square';
 import ScreenQuad from './geometry/ScreenQuad';
+import LongCube from './geometry/LongCube';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
 import Camera from './Camera';
-import {setGL} from './globals';
+import {setGL, cylinderString, skullString} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
-
-// Define an object with application parameters and button callbacks
-// This will be referred to by dat.GUI's functions that add GUI elements.
-const controls = {
-};
+import LSystem from './lsystem/LSystem'
+import Mesh from './geometry/Mesh';
 
 let square: Square;
 let screenQuad: ScreenQuad;
 let time: number = 0.0;
+let lsystem: LSystem = new LSystem();
+let longCube: LongCube;
+let branchCylinder: Mesh;
+let skullMesh: Mesh;
+
+function guiChangeCallback() {
+  console.log("gui changed!");
+  lsystem.setIter(controls['Number of iteration']);
+
+  lsystem.drawingRule.xRot = controls['X axis base rotation'];
+  lsystem.drawingRule.xRotRandom = controls['X axis random'];
+
+  lsystem.drawingRule.yRot = controls['Y axis base rotation'];
+  lsystem.drawingRule.yRotRandom = controls['Y axis random'];
+
+  lsystem.drawingRule.zRot = controls['Z axis base rotation'];
+  lsystem.drawingRule.zRotRandom = controls['Z axis random'];
+
+  lsystem.compute();
+  updateBuffer();
+}
+
+const controls = {
+  'Number of iteration': 3,
+  'X axis base rotation': 20,
+  'X axis random': 4,
+  'Y axis base rotation': 5,
+  'Y axis random': 0,
+  'Z axis base rotation': 30,
+  'Z axis random': 5,
+};
 
 function loadScene() {
   square = new Square();
   square.create();
   screenQuad = new ScreenQuad();
   screenQuad.create();
+  longCube = new LongCube();
+  longCube.create();
+  branchCylinder = new Mesh(cylinderString, vec3.fromValues(0, 0, 0));
+  branchCylinder.create();
+  skullMesh = new Mesh(skullString, vec3.fromValues(0, 0, 0));
+  skullMesh.create();
+  guiChangeCallback(); // lsystem compute here
+  updateBuffer();
+}
 
-  // Set up instanced rendering data arrays here.
-  // This example creates a set of positional
-  // offsets and gradiated colors for a 100x100 grid
-  // of squares, even though the VBO data for just
-  // one square is actually passed to the GPU
-  let offsetsArray = [];
-  let colorsArray = [];
-  let n: number = 100.0;
-  for(let i = 0; i < n; i++) {
-    for(let j = 0; j < n; j++) {
-      offsetsArray.push(i);
-      offsetsArray.push(j);
-      offsetsArray.push(0);
+function updateBuffer() {
+  let translates: Float32Array = new Float32Array(lsystem.posArray);
+  let rotMats: Float32Array = new Float32Array(lsystem.rotArray);
+  let depths: Float32Array = new Float32Array(lsystem.depthArray);
+  branchCylinder.setInstanceVBOs(translates, rotMats, depths);
+  branchCylinder.setNumInstances(depths.length);
 
-      colorsArray.push(i / n);
-      colorsArray.push(j / n);
-      colorsArray.push(1.0);
-      colorsArray.push(1.0); // Alpha channel
-    }
-  }
-  let offsets: Float32Array = new Float32Array(offsetsArray);
-  let colors: Float32Array = new Float32Array(colorsArray);
-  square.setInstanceVBOs(offsets, colors);
-  square.setNumInstances(n * n); // grid of "particles"
+  let fTranslates: Float32Array = new Float32Array(lsystem.fPosArray);
+  let fRotMats: Float32Array = new Float32Array(lsystem.fRotArray);
+  let fDepths: Float32Array = new Float32Array(lsystem.fDepthArray);
+  skullMesh.setInstanceVBOs(fTranslates, fRotMats, fDepths);
+  skullMesh.setNumInstances(fDepths.length);
+  console.log(fDepths.length);
 }
 
 function main() {
@@ -61,6 +88,14 @@ function main() {
   // Add controls to the gui
   const gui = new DAT.GUI();
 
+  gui.add(controls, 'Number of iteration', 1, 4).step(1).onFinishChange(guiChangeCallback);
+  gui.add(controls, 'X axis base rotation', 0, 180).step(0.5).onFinishChange(guiChangeCallback);
+  gui.add(controls, 'X axis random', 0, 90).step(0.5).onFinishChange(guiChangeCallback);  
+  gui.add(controls, 'Y axis base rotation', -90, 90).step(0.5).onFinishChange(guiChangeCallback);
+  gui.add(controls, 'Y axis random', 0, 90).step(0.5).onFinishChange(guiChangeCallback);  
+  gui.add(controls, 'Z axis base rotation', 0, 180).step(0.5).onFinishChange(guiChangeCallback);
+  gui.add(controls, 'Z axis random', 0, 90).step(0.5).onFinishChange(guiChangeCallback);  
+
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
   const gl = <WebGL2RenderingContext> canvas.getContext('webgl2');
@@ -74,16 +109,25 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  const camera = new Camera(vec3.fromValues(50, 50, 10), vec3.fromValues(50, 50, 0));
+  const camera = new Camera(vec3.fromValues(10, 0, 10), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.ONE, gl.ONE); // Additive blending
+  // gl.enable(gl.BLEND);
+  // gl.blendFunc(gl.ONE, gl.ONE); // Additive blending
+  // gl.enable(gl.CULL_FACE);
+  // gl.cullFace(gl.BACK);
+  gl.enable(gl.DEPTH_TEST);
+
 
   const instancedShader = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, require('./shaders/instanced-vert.glsl')),
+    new Shader(gl.VERTEX_SHADER, require('./shaders/my-instanced-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/instanced-frag.glsl')),
+  ]);
+
+  const instancedFlowerShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/my-flower-instanced-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
   ]);
 
   const flat = new ShaderProgram([
@@ -94,6 +138,8 @@ function main() {
   // This function will be called every frame
   function tick() {
     camera.update();
+    // console.log(camera.position);
+    // console.log(camera.forward);
     stats.begin();
     instancedShader.setTime(time);
     flat.setTime(time++);
@@ -101,7 +147,10 @@ function main() {
     renderer.clear();
     renderer.render(camera, flat, [screenQuad]);
     renderer.render(camera, instancedShader, [
-      square,
+      branchCylinder,
+    ]);
+    renderer.render(camera, instancedFlowerShader, [
+      skullMesh,
     ]);
     stats.end();
 
@@ -114,6 +163,10 @@ function main() {
     camera.setAspectRatio(window.innerWidth / window.innerHeight);
     camera.updateProjectionMatrix();
     flat.setDimensions(window.innerWidth, window.innerHeight);
+    console.log(window.innerWidth);
+    console.log(window.innerHeight);
+    console.log(window.innerHeight / window.innerWidth);
+
   }, false);
 
   renderer.setSize(window.innerWidth, window.innerHeight);

@@ -7,8 +7,13 @@ abstract class Drawable {
   bufPos: WebGLBuffer;
   bufNor: WebGLBuffer;
   bufTranslate: WebGLBuffer;
+ 
   bufCol: WebGLBuffer;
   bufUV: WebGLBuffer;
+
+  bufDepth: WebGLBuffer;
+  bufForward: WebGLBuffer;
+  bufRotQuat: WebGLBuffer;
 
   idxGenerated: boolean = false;
   posGenerated: boolean = false;
@@ -16,6 +21,10 @@ abstract class Drawable {
   colGenerated: boolean = false;
   translateGenerated: boolean = false;
   uvGenerated: boolean = false;
+  depthGenerated: boolean = false;
+  forwardGenerated: boolean = false;
+  rotQuatGenerated: boolean = false;
+
 
   numInstances: number = 0; // How many instances of this Drawable the shader program should draw
 
@@ -28,6 +37,9 @@ abstract class Drawable {
     gl.deleteBuffer(this.bufCol);
     gl.deleteBuffer(this.bufTranslate);
     gl.deleteBuffer(this.bufUV);
+    gl.deleteBuffer(this.bufDepth);
+    gl.deleteBuffer(this.bufForward);
+    gl.deleteBuffer(this.bufRotQuat);
   }
 
   generateIdx() {
@@ -58,6 +70,21 @@ abstract class Drawable {
   generateUV() {
     this.uvGenerated = true;
     this.bufUV = gl.createBuffer();
+  }
+
+  generateForward() {
+    this.forwardGenerated = true;
+    this.bufForward = gl.createBuffer();
+  }
+
+  generateDepth() {
+    this.depthGenerated = true;
+    this.bufDepth = gl.createBuffer();
+  }
+
+  generateRotMat() {
+    this.rotQuatGenerated = true;
+    this.bufRotQuat = gl.createBuffer();
   }
 
   bindIdx(): boolean {
@@ -100,6 +127,27 @@ abstract class Drawable {
       gl.bindBuffer(gl.ARRAY_BUFFER, this.bufUV);
     }
     return this.uvGenerated;
+  }
+
+  bindForward(): boolean {
+    if (this.forwardGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufForward);
+    }
+    return this.forwardGenerated;
+  }
+
+  bindDepth(): boolean {
+    if (this.depthGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufDepth);
+    }
+    return this.depthGenerated;
+  }
+
+  bindRotQuat(): boolean {
+    if (this.rotQuatGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotQuat);
+    }
+    return this.rotQuatGenerated;
   }
 
   elemCount(): number {
