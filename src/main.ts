@@ -10,6 +10,8 @@ import {setGL, cylinderString, skullString} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import LSystem from './lsystem/LSystem'
 import Mesh from './geometry/Mesh';
+import TerrainInfo from './TerrainInfo';
+var hash = require('object-hash');
 
 let square: Square;
 let screenQuad: ScreenQuad;
@@ -77,6 +79,19 @@ function updateBuffer() {
 }
 
 function main() {
+  let ti: TerrainInfo = new TerrainInfo(3.2, 1.0);
+  
+  for (var i = 0; i < 0.3; i = i + 0.1) {
+    for (var j = 0; j < 0.3; j = j + 0.1) {
+      console.log(ti.randomVec2F1(i, j));
+    }
+  }
+
+  for (var i = 0; i < 0.3; i = i + 0.05) {
+    for (var j = 0; j < 0.3; j = j + 0.05) {
+      console.log(ti.randomVec2F1(i, j));
+    }
+  }
   // Initial display for framerate
   const stats = Stats();
   stats.setMode(0);

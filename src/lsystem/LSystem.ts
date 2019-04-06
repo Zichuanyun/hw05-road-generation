@@ -62,9 +62,9 @@ class LSystem {
     // console.log(this.rotArray);
     // console.log(this.depthArray);
 
-    console.log(this.fPosArray);
-    console.log(this.fRotArray);
-    console.log(this.fDepthArray);
+    // console.log(this.fPosArray);
+    // console.log(this.fRotArray);
+    // console.log(this.fDepthArray);
   }
 }
 

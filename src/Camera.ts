@@ -20,12 +20,11 @@ class Camera {
     const canvas = <HTMLCanvasElement> document.getElementById('canvas');
 
     this.controls = CameraControls(canvas, {
-      eye: [10, 0, 10],
+      eye: [0, 100, 0],
       center: [0, 0, 0],
       zoomMax: 500
     });
-    // this.controls.eye = [0, 0, 0];
-    // this.controls.center = [0, 0, 0];
+
     console.log("in control eye: " + this.controls.eye);
     console.log("in control center: " + this.controls.center);
     console.log("in control up: " + this.controls.up);
