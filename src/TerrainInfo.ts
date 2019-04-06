@@ -37,13 +37,13 @@ class TerrainInfo {
   }
 
   private worleyHeight(x: number, y: number): number {
-    let tile: number = 10;
+    let tile: number = 5;
     
     let xi = Math.floor(tile * x);
     let yi = Math.floor(tile * y);
     let xf = tile * x % 1;
     let yf = tile * y % 1;
-
+    
     let i_st: vec2 = vec2.fromValues(xi, yi);
     let f_st: vec2 = vec2.fromValues(xf, yf);
 
@@ -61,9 +61,11 @@ class TerrainInfo {
             vec2.add(curNei, i_st, neighbor);
             let point: vec2 = this.randomVec2Vec2(curNei);
 
-			      // Vector between the pixel and the point
+            // Vector between the pixel and the point
+            let neighborPlusPoint: vec2 = vec2.create();
+            vec2.add(neighborPlusPoint, point, neighbor);
             let diff: vec2 = vec2.create();
-            vec2.sub(diff, curNei, f_st);
+            vec2.sub(diff, neighborPlusPoint, f_st);
 
             // Distance to the point
             let dist: number = vec2.len(diff);
@@ -76,6 +78,12 @@ class TerrainInfo {
             }
         }
     }
+    let point: vec2 = this.randomVec2Vec2(myCell);
+    let threshold = 0.02;
+    // worley cernel debugging
+    // if (Math.abs(point[0] - x) < threshold && Math.abs(point[1] - y) < threshold) {
+    //   return 3.0;
+    // }
     return this.randomVec2F1(myCell[0], myCell[1]);;
   }
 

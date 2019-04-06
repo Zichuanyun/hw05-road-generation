@@ -35,7 +35,11 @@ class Plane extends Drawable {
     for(let x = 0; x <= width; ++x) {
       for(let z = 0; z <= width; ++z) {
         let h: number = this.ti.getHeight(x / width, z / width);
-        
+        if (h > 0.65) {
+          h = 1;
+        } else {
+          h = 0;
+        }
         // Make a strip of vertices along Z with the current X coord
         this.normals[posIdx] = 0;
         this.positions[posIdx++] = x * normalize * this.scale[0] + this.center[0] - this.scale[0] * 0.5;
