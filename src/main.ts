@@ -12,6 +12,7 @@ import LSystem from './lsystem/LSystem'
 import Mesh from './geometry/Mesh';
 import TerrainInfo from './TerrainInfo';
 import Plane from './geometry/Plane';
+import RoadLSystem from './lsystem/RoadLSystem';
 var hash = require('object-hash');
 
 let square: Square;
@@ -65,7 +66,7 @@ function loadScene() {
   skullMesh.create();
 
 
-  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 13, ti);
+  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 10, ti);
   plane.create();
   plane.setNumInstances(1);
 
@@ -88,6 +89,8 @@ function updateBuffer() {
 }
 
 function main() {
+  let rl: RoadLSystem = new RoadLSystem();
+  rl.compute();
 
   ti = new TerrainInfo(3.2, 1.0);
 
