@@ -1,10 +1,12 @@
 import {vec2} from 'gl-matrix'
+import SystemInfoObject from './SystemInfoObject';
 var hash = require('object-hash');
 
 class TerrainInfo {
 
   private seed: number = 0;
   private ratio: number = 1;
+  si: SystemInfoObject;
 
   private getHashInt(str: string): number {
     var hash = 0, i, chr;
@@ -25,11 +27,14 @@ class TerrainInfo {
     return vec2.fromValues(this.randomVec2F1(uv[0], uv[1]), this.randomVec2F1(uv[1], uv[0]));
   }
 
-  
+  constructor(si: SystemInfoObject) {
+    this.si = si;
+    this.compute();
+  }
 
-  constructor(seed: number, ratio: number) {
-    this.seed = hash.sha1(seed);
-    this.ratio = ratio;
+  compute() {
+    this.seed = hash.sha1(this.si.globalSeed);
+    this.ratio = this.si.mapWidthHeightRatio;
   }
 
   getHeight(x: number, y: number): number {

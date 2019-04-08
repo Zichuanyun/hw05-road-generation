@@ -1,11 +1,24 @@
 import {vec3, vec2} from 'gl-matrix';
+import SystemInfoObject from '../SystemInfoObject';
+import TerrainInfo from '../TerrainInfo';
 
 class RoadLSystem {
+  si: SystemInfoObject;
+  ti: TerrainInfo;
 
-  constructor() {
-
+  constructor(si: SystemInfoObject, ti: TerrainInfo) {
+    this.si = si;
+    this.ti = ti;
   }
 
+  setSystemInfo(si: SystemInfoObject) {
+    this.si = si;
+  }
+
+  setTerrainInfo(ti: TerrainInfo) {
+    this.ti = ti;
+  }
+  
   compute() {
     this.test();
   }

@@ -13,6 +13,7 @@ import Mesh from './geometry/Mesh';
 import TerrainInfo from './TerrainInfo';
 import Plane from './geometry/Plane';
 import RoadLSystem from './lsystem/RoadLSystem';
+import SystemInfoObject from './SystemInfoObject';
 var hash = require('object-hash');
 
 let square: Square;
@@ -24,34 +25,9 @@ let branchCylinder: Mesh;
 let skullMesh: Mesh;
 let plane: Plane;
 let scale: number = 100;
-let ti: TerrainInfo; 
-
-function guiChangeCallback() {
-  console.log("gui changed!");
-  lsystem.setIter(controls['Number of iteration']);
-
-  lsystem.drawingRule.xRot = controls['X axis base rotation'];
-  lsystem.drawingRule.xRotRandom = controls['X axis random'];
-
-  lsystem.drawingRule.yRot = controls['Y axis base rotation'];
-  lsystem.drawingRule.yRotRandom = controls['Y axis random'];
-
-  lsystem.drawingRule.zRot = controls['Z axis base rotation'];
-  lsystem.drawingRule.zRotRandom = controls['Z axis random'];
-
-  lsystem.compute();
-  updateBuffer();
-}
-
-const controls = {
-  'Number of iteration': 3,
-  'X axis base rotation': 20,
-  'X axis random': 4,
-  'Y axis base rotation': 5,
-  'Y axis random': 0,
-  'Z axis base rotation': 30,
-  'Z axis random': 5,
-};
+let trInfo: TerrainInfo;
+let roadLSystem: RoadLSystem;
+let sysInfo: SystemInfoObject = new SystemInfoObject();
 
 function loadScene() {
   square = new Square();
@@ -66,7 +42,7 @@ function loadScene() {
   skullMesh.create();
 
 
-  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 10, ti);
+  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 10, trInfo);
   plane.create();
   plane.setNumInstances(1);
 
@@ -88,41 +64,63 @@ function updateBuffer() {
   skullMesh.setNumInstances(fDepths.length);
 }
 
+function writeGuiInfo() {
+  console.log("controls: " + controls['block max x size']);
+  sysInfo.maxXSize = controls['block max x size'];
+  sysInfo.maxZSize = controls['block max z size'];
+  sysInfo.globalSeed = controls['seed'];
+  sysInfo.mapWidthHeightRatio = controls['width height ratio'];
+}
+
+function guiChangeCallback() {
+  console.log("gui changed!");
+
+  writeGuiInfo();
+
+  trInfo.compute();
+  // TODO(zichuanyu) may have more elegant ways?
+  plane.create();
+
+  // TODO(zichuanyu) change to road l system
+  lsystem.compute();
+  // TODO(zichuanyu) update this buffer function
+  updateBuffer();
+}
+
+const controls = {
+  'seed': 'seed',
+  'block max x size': 1,
+  'block max z size': 0.8,
+  'width height ratio': 1,
+};
+
 function main() {
-  let rl: RoadLSystem = new RoadLSystem();
+  // Add controls to the gui
+  const gui = new DAT.GUI();
+
+  gui.add(controls, 'seed', 'seed').onFinishChange(guiChangeCallback);
+  gui.add(controls, 'block max x size', 0, 2).step(0.05).onFinishChange(guiChangeCallback);
+  gui.add(controls, 'block max z size', 0, 2).step(0.05).onFinishChange(guiChangeCallback);  
+  gui.add(controls, 'width height ratio', 1, 10).step(0.5).onFinishChange(guiChangeCallback);  
+  writeGuiInfo();
+
+  trInfo = new TerrainInfo(sysInfo);
+
+  // for test
+  let rl: RoadLSystem = new RoadLSystem(sysInfo, trInfo);
   rl.compute();
 
-  ti = new TerrainInfo(3.2, 1.0);
+  roadLSystem = new RoadLSystem(sysInfo, trInfo);
+  roadLSystem.compute();
 
-  // for (var i = 0; i < 0.3; i = i + 0.1) {
-  //   for (var j = 0; j < 0.3; j = j + 0.1) {
-  //     console.log(ti.randomVec2F1(i, j));
-  //   }
-  // }
 
-  // for (var i = 0; i < 0.3; i = i + 0.05) {
-  //   for (var j = 0; j < 0.3; j = j + 0.05) {
-  //     console.log(ti.randomVec2F1(i, j));
-  //   }
-  // }
   // Initial display for framerate
   const stats = Stats();
   stats.setMode(0);
   stats.domElement.style.position = 'absolute';
   stats.domElement.style.left = '0px';
   stats.domElement.style.top = '0px';
-  document.body.appendChild(stats.domElement);
-
-  // Add controls to the gui
-  const gui = new DAT.GUI();
-
-  gui.add(controls, 'Number of iteration', 1, 4).step(1).onFinishChange(guiChangeCallback);
-  gui.add(controls, 'X axis base rotation', 0, 180).step(0.5).onFinishChange(guiChangeCallback);
-  gui.add(controls, 'X axis random', 0, 90).step(0.5).onFinishChange(guiChangeCallback);  
-  gui.add(controls, 'Y axis base rotation', -90, 90).step(0.5).onFinishChange(guiChangeCallback);
-  gui.add(controls, 'Y axis random', 0, 90).step(0.5).onFinishChange(guiChangeCallback);  
-  gui.add(controls, 'Z axis base rotation', 0, 180).step(0.5).onFinishChange(guiChangeCallback);
-  gui.add(controls, 'Z axis random', 0, 90).step(0.5).onFinishChange(guiChangeCallback);  
+  document.body.appendChild(stats.domElement); 
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
