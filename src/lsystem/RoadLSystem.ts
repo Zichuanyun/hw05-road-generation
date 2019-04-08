@@ -7,34 +7,89 @@ class RoadLSystem {
   }
 
   compute() {
+    this.test();
+  }
+
+  test() {
     let list: RoadLSystemList = new RoadLSystemList();
     let n0: RoadLSystemNode = new RoadLSystemNode(0);
     let n1: RoadLSystemNode = new RoadLSystemNode(1);
     let n2: RoadLSystemNode = new RoadLSystemNode(2);
     let n3: RoadLSystemNode = new RoadLSystemNode(3);
-    console.log("here");
 
     list.append(n0);
     list.append(n1);
     list.prepend(n2);
-    console.log("here");
-
-    console.log(list.toArray());
+    console.log(list.toStringArray());
     // 2 0 1
-
-
 
     list.delete(n0);
     console.log(list.toStringArray());
     // 2 1
 
-    console.log("here");
-
-
     n2.detach();
     console.log(list.toStringArray());
     // 1
+
+    list.insertAfter(n1, n3);
+    console.log(list.toStringArray());
+    // 1 3
+
+    list.insertBefore(n1, n2);
+    console.log(n2.list.toStringArray());
+    // 2 1 3
+
+    console.log(list.head.toString());
+    // 2
+
+    console.log(list.tail.toString());
+    // 3
+
+    // console.log(n0.list.toStringArray());
+    // null
+
+    console.log(list.insertAfter(n0, n0));
+    // false
+
+    console.log(list.insertBefore(n1, n0));
+    // true
+
+    console.log(list.toStringArray());
+    // 2 0 1 3
+
+    list.delete(list.head);
+    list.delete(n3);
+    console.log(list.head.toString());
+    // 0
+    console.log(list.tail.toString());
+    // 1
+    console.log(list.toStringArray());
+    // 0 1
   }
+}
+
+class RoadLSystemNode {
+  num: number;
+
+  constructor(num: number) {
+    this.num = num;
+  }
+
+  list: RoadLSystemList = null;
+  next: RoadLSystemNode = null;
+  prev: RoadLSystemNode = null;
+
+  detach() {
+    this.list.delete(this);
+  }
+  
+  toString(): string {
+    return this.num.toString();
+  }
+}
+
+class RoadTurtle {
+
 }
 
 class RoadLSystemList {
@@ -45,6 +100,56 @@ class RoadLSystemList {
   constructor() {
     this.head = null;
     this.tail = null;
+  }
+
+  insertAfter(pivot: RoadLSystemNode, node: RoadLSystemNode): boolean {
+    if (!this.set.has(pivot)) {
+      return false;
+    }
+
+    let nextNode: RoadLSystemNode = pivot.next;
+
+    node.prev = pivot;
+    pivot.next = node;
+
+    node.next = nextNode;
+    if (nextNode !== null) {
+      nextNode.prev = node;
+    }
+
+    if (pivot === this.tail) {
+      this.tail = node;
+    }
+
+    node.list = this;
+    this.set.add(node);
+
+    return true;
+  }
+
+  insertBefore(pivot: RoadLSystemNode, node: RoadLSystemNode) {
+    if (!this.set.has(pivot)) {
+      return false;
+    }
+
+    let prevNode: RoadLSystemNode = pivot.prev;
+
+    node.next = pivot;
+    pivot.prev = node;
+
+    node.prev = prevNode;
+    if (prevNode !== null) {
+      prevNode.next = node;
+    }
+
+    if (pivot === this.head) {
+      this.head = node;
+    }
+
+    node.list = this;
+    this.set.add(node);
+
+    return true;
   }
 
   append(node: RoadLSystemNode) {
@@ -77,9 +182,9 @@ class RoadLSystemList {
     this.set.add(node);
   }
 
-  delete(node: RoadLSystemNode) {
+  delete(node: RoadLSystemNode): boolean {
     if (!this.set.has(node)) {
-      return;
+      return false;
     }
     node.list = null;
     this.set.delete(node);
@@ -97,6 +202,7 @@ class RoadLSystemList {
     }
     node.next = null;
     node.prev = null;
+    return true;
   }
 
   toArray(): Array<RoadLSystemNode> {
@@ -111,7 +217,6 @@ class RoadLSystemList {
     let arr: Array<string> = new Array();
     for (var cur = this.head; cur; cur = cur.next) {
       arr.push(cur.toString());
-      console.log(cur);
     }
     return arr;
   }
@@ -119,30 +224,6 @@ class RoadLSystemList {
   length(): number {
     return this.set.size;
   }
-}
-
-class RoadLSystemNode {
-  num: number;
-
-  constructor(num: number) {
-    this.num = num;
-  }
-
-  list: RoadLSystemList = null;
-  next: RoadLSystemNode = null;
-  prev: RoadLSystemNode = null;
-
-  detach() {
-    this.list.delete(this);
-  }
-  
-  toString(): string {
-    return this.num.toString();
-  }
-}
-
-class RoadTurtle {
-
 }
 
 export default RoadLSystem;
