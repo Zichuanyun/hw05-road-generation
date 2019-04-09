@@ -62,15 +62,6 @@ function fillArrayCallback(node: RoadLSystemNode) {
   this.posArray.push(node.srcPos[1]);
   this.posArray.push(node.srcPos[2]);
 
-  // let rad: number = node.intendRot * Math.PI / 180.0;
-  // // let rad: number = Math.atan2(node.intendDir[0], node.intendDir[2]);
-  // console.log("deg: " + rad * 180.0 / Math.PI);
-  // let transMat: mat4 = mat4.fromValues(
-  //   Math.cos(rad), Math.sin(rad), 0, 0,   // 1st col
-  //   -Math.sin(rad), Math.cos(rad), 0, 0,  // 2nd col
-  //   0, 0, 1, 0,                           // 3rd col
-  //   0, 0, 0, 1                            // 4th col
-  // );
   let q = quat.create();
   quat.fromEuler(q, 0, node.intendRot, 0);
   // mat4.getRotation(q, transMat);
