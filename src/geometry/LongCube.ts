@@ -35,17 +35,17 @@ class LongCube extends Drawable {
 
                                   6, 0, 4,
                                   4, 0, 2]);
+                                     
+    // now z is the front axis
+    this.positions = new Float32Array([-0.5, -0.5, 1, 1,
+                                       0.5, -0.5, 1, 1,
+                                       -0.5, 0.5, 1, 1,
+                                       0.5, 0.5, 1, 1,
 
-                                     // HERE
-    this.positions = new Float32Array([-0.5, 0, 0.5, 1,
-                                       0.5, 0, 0.5, 1,
-                                       -0.5, 2, 0.5, 1,
-                                       0.5, 2, 0.5, 1,
-
-                                       -0.5, 2, -0.5, 1,
-                                       0.5, 2, -0.5, 1,
-                                       -0.5, 0, -0.5, 1,
-                                       0.5, 0, -0.5, 1]);
+                                       -0.5, 0.5, 0, 1,
+                                       0.5, 0.5, 0, 1,
+                                       -0.5, -0.5, 0, 1,
+                                       0.5, -0.5, 0, 1]);
 
     this.generateIdx();
     this.generatePos();
@@ -60,7 +60,7 @@ class LongCube extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufPos);
     gl.bufferData(gl.ARRAY_BUFFER, this.positions, gl.STATIC_DRAW);
 
-    console.log(`Created square`);
+    console.log(`Created long cube`);
   }
 
   setInstanceVBOs(translates: Float32Array, rotMats: Float32Array, depths: Float32Array) {

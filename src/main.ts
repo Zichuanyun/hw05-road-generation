@@ -51,17 +51,16 @@ function loadScene() {
 }
 
 function updateBuffer() {
-  let translates: Float32Array = new Float32Array(lsystem.posArray);
-  let rotMats: Float32Array = new Float32Array(lsystem.rotArray);
-  let depths: Float32Array = new Float32Array(lsystem.depthArray);
-  branchCylinder.setInstanceVBOs(translates, rotMats, depths);
-  branchCylinder.setNumInstances(depths.length);
+  let translates: Float32Array = new Float32Array(roadLSystem.posArray);
+  let rotQuats: Float32Array = new Float32Array(roadLSystem.rotArray);
+  // use the depth position for length
+  let depths: Float32Array = new Float32Array(roadLSystem.lenArray);
+  longCube.setInstanceVBOs(translates, rotQuats, depths);
+  longCube.setNumInstances(depths.length);
+  console.log(translates);
+  console.log(rotQuats);
+  console.log(depths);
 
-  let fTranslates: Float32Array = new Float32Array(lsystem.fPosArray);
-  let fRotMats: Float32Array = new Float32Array(lsystem.fRotArray);
-  let fDepths: Float32Array = new Float32Array(lsystem.fDepthArray);
-  skullMesh.setInstanceVBOs(fTranslates, fRotMats, fDepths);
-  skullMesh.setNumInstances(fDepths.length);
 }
 
 function writeGuiInfo() {
@@ -105,10 +104,6 @@ function main() {
   writeGuiInfo();
 
   trInfo = new TerrainInfo(sysInfo);
-
-  // for test
-  let rl: RoadLSystem = new RoadLSystem(sysInfo, trInfo);
-  rl.compute();
 
   roadLSystem = new RoadLSystem(sysInfo, trInfo);
   roadLSystem.compute();
@@ -175,6 +170,9 @@ function main() {
     renderer.render(camera, flat, [screenQuad]);
     renderer.render(camera, lambert, [
       plane,
+    ]);
+    renderer.render(camera, instancedShader, [
+      longCube,
     ]);
 
     stats.end();

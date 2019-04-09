@@ -1,10 +1,18 @@
-import {vec3, vec2} from 'gl-matrix';
+import {vec3, vec2, mat4, vec4, mat3, quat} from 'gl-matrix';
 import SystemInfoObject from '../SystemInfoObject';
 import TerrainInfo from '../TerrainInfo';
 
 class RoadLSystem {
   si: SystemInfoObject;
   ti: TerrainInfo;
+  intxnSet: Set<RoadIntersection> = new Set();
+  roadSet: Set<RoadLSystemNode> = new Set();
+  posArray: Array<number> = new Array();
+  rotArray: Array<number> = new Array();
+  lenArray: Array<number> = new Array();
+  // Need export -------------------------------------------------
+
+  // end need export -------------------------------------------------
 
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
     this.si = si;
@@ -20,72 +28,109 @@ class RoadLSystem {
   }
   
   compute() {
-    this.test();
+    // this.test();
+
+    // zero out all members
+    this.intxnSet.clear();
+    this.roadSet.clear();
+    this.posArray.length = 0;
+    this.rotArray.length = 0;
+    this.lenArray.length = 0;
+
+    let list: RoadLSystemList = new RoadLSystemList();
+    // TODO(zichuanyu) use worley cell as start point
+    
+    this.roadSet.add(new RoadLSystemNode(0,
+      0,
+      vec3.fromValues(-2, 10, -3),
+      20));
+
+    this.roadSet.add(new RoadLSystemNode(0,
+        90,
+        vec3.fromValues(1, 10, -3),
+        20));
+    this.roadSet.forEach(fillArrayCallback.bind(this));
   }
 
-  test() {
-    let list: RoadLSystemList = new RoadLSystemList();
-    let n0: RoadLSystemNode = new RoadLSystemNode(0);
-    let n1: RoadLSystemNode = new RoadLSystemNode(1);
-    let n2: RoadLSystemNode = new RoadLSystemNode(2);
-    let n3: RoadLSystemNode = new RoadLSystemNode(3);
+  
 
-    list.append(n0);
-    list.append(n1);
-    list.prepend(n2);
-    console.log(list.toStringArray());
-    // 2 0 1
+}
 
-    list.delete(n0);
-    console.log(list.toStringArray());
-    // 2 1
+function fillArrayCallback(node: RoadLSystemNode) {
+  console.log(node);
+  this.posArray.push(node.srcPos[0]);
+  this.posArray.push(node.srcPos[1]);
+  this.posArray.push(node.srcPos[2]);
 
-    n2.detach();
-    console.log(list.toStringArray());
-    // 1
+  // let rad: number = node.intendRot * Math.PI / 180.0;
+  // // let rad: number = Math.atan2(node.intendDir[0], node.intendDir[2]);
+  // console.log("deg: " + rad * 180.0 / Math.PI);
+  // let transMat: mat4 = mat4.fromValues(
+  //   Math.cos(rad), Math.sin(rad), 0, 0,   // 1st col
+  //   -Math.sin(rad), Math.cos(rad), 0, 0,  // 2nd col
+  //   0, 0, 1, 0,                           // 3rd col
+  //   0, 0, 0, 1                            // 4th col
+  // );
+  let q = quat.create();
+  quat.fromEuler(q, 0, node.intendRot, 0);
+  // mat4.getRotation(q, transMat);
+  quat.normalize(q, q);
+  // HERE
+  this.rotArray.push(q[0]);
+  this.rotArray.push(q[1]);
+  this.rotArray.push(q[2]);
+  this.rotArray.push(q[3]);
 
-    list.insertAfter(n1, n3);
-    console.log(list.toStringArray());
-    // 1 3
+  this.lenArray.push(node.intendLen);
+}
 
-    list.insertBefore(n1, n2);
-    console.log(n2.list.toStringArray());
-    // 2 1 3
+class RoadIntersection {
+  pos: vec3 = vec3.create();
+  inRoads: Set<RoadLSystemNode> = new Set();
+  outRoads: Set<RoadLSystemNode> = new Set();
 
-    console.log(list.head.toString());
-    // 2
+  constructor(pos: vec3) {
+    // TODO(zichuanyu) put into cell
+    vec3.copy(this.pos, pos);
+  }
 
-    console.log(list.tail.toString());
-    // 3
+  addInRoad(node: RoadLSystemNode) {
+    node.dstIntxn = this;
+    this.inRoads.add(node);
+  }
 
-    // console.log(n0.list.toStringArray());
-    // null
-
-    console.log(list.insertAfter(n0, n0));
-    // false
-
-    console.log(list.insertBefore(n1, n0));
-    // true
-
-    console.log(list.toStringArray());
-    // 2 0 1 3
-
-    list.delete(list.head);
-    list.delete(n3);
-    console.log(list.head.toString());
-    // 0
-    console.log(list.tail.toString());
-    // 1
-    console.log(list.toStringArray());
-    // 0 1
+  addOutRoad(node: RoadLSystemNode) {
+    node.srcIntxn = this;
+    this.outRoads.add(node);
   }
 }
 
+// both the road segment and the LSystem node
+// because we don't want a lot of copy and paste between memory
 class RoadLSystemNode {
-  num: number;
+  static frontDir: vec4 = vec4.fromValues(0, 0, 1, 0);
 
-  constructor(num: number) {
-    this.num = num;
+  id: number;
+  del: number;
+  srcPos: vec3 = vec3.create();
+  dstPos: vec3 = vec3.create();
+  prevRot: number = 0;
+  intendRot: number = 0;
+  
+  intendLen: number;
+
+  isHeightWay: false;
+
+  // intersection
+  srcIntxn: RoadIntersection = null;
+  dstIntxn: RoadIntersection = null;
+
+  constructor(id: number, prevRot: number, srcPos: vec3, intendLen: number) {
+    this.id = id;
+    this.prevRot = prevRot;
+    this.intendRot = prevRot;
+    vec3.copy(this.srcPos, srcPos);
+    this.intendLen = intendLen;
   }
 
   list: RoadLSystemList = null;
@@ -97,7 +142,11 @@ class RoadLSystemNode {
   }
   
   toString(): string {
-    return this.num.toString();
+    return this.id.toString();
+  }
+
+  rotateDegree(deg: number) {
+    // TODO(zichuanyu) think more
   }
 }
 
@@ -166,18 +215,15 @@ class RoadLSystemList {
   }
 
   append(node: RoadLSystemNode) {
-    console.log("here 1");
     node.list = this;
     if (this.set.size > 0) {
       this.tail.next = node;
       node.prev = this.tail;
       this.tail = node;
     } else {
-    console.log("here 2");
       this.head = node;
       this.tail = node;
     }
-    console.log("here 3");
 
     this.set.add(node);
   }

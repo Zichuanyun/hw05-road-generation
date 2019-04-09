@@ -58,7 +58,7 @@ void main()
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,
-        vec3(0.3 * taper, 2.0, 0.3 * taper)
+        vec3(1.0, 1.0, vs_Depth)
     );
     vec4 worldPos = transformMat * vs_Pos;
     gl_Position = u_ViewProj * worldPos;
