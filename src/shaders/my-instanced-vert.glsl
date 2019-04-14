@@ -54,11 +54,11 @@ out vec4 fs_Pos;
 void main()
 {
     fs_Col = vec4(vec3(vs_Depth * 0.3), 1.0);
-    float taper = pow(TAPER_FACTOR, vs_Depth);
+    float taper = 0.5;
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,
-        vec3(1.0, 1.0, vs_Depth)
+        vec3(taper, taper, vs_Depth)
     );
     vec4 worldPos = transformMat * vs_Pos;
     gl_Position = u_ViewProj * worldPos;

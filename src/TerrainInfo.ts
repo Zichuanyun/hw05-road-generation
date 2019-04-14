@@ -106,8 +106,8 @@ class TerrainInfo {
     return this.randomVec2F1(xi, yi);
   }
 
-  getHeightScale(x: number, y: number, s: number): number {
-    return this.getHeight(x / s, y / s);
+  getHeightScaleShift(x: number, y: number, s: number): number {
+    return this.getHeight(x / s + 0.5, y / s + 0.5);
   }
 
 }
