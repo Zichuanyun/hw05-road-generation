@@ -27,10 +27,11 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 6;
+  iter: number = 3;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
-  initAngle: number = 30;
+  initAngle: number = 0;
+  mergeToIntxnThreshold = 2;
 
   // end need export -------------------------------------------------
 
@@ -65,7 +66,6 @@ class RoadLSystem {
       }
       this.intxnGrid.push(thisArray);
     }
-    
 
     let list: RoadLSystemList = new RoadLSystemList();
 
@@ -73,16 +73,16 @@ class RoadLSystem {
     // TODO(zichuanyu) use worley cell as start point   
     let startNode: RoadLSystemNode = new RoadLSystemNode();
 
-    // startNode.prevAngle = 0;
     startNode.angleOption = 0;
     startNode.prevAngleOption = 0;
     startNode.chooseAngle(0);
 
-    startNode.srcPos = vec3.fromValues(-45, 5, 0);
+    startNode.srcPos = vec3.fromValues(-35, 5, 0);
     startNode.intendLen = this.maxZLen;
     startNode.calcDst();
-    let startIntxn: RoadIntersection = new RoadIntersection(startNode.srcPos);
-    
+    // put into grid
+    let startIntxn: RoadIntersection
+      = RoadIntersection.createAndPutToCell(startNode.srcPos, this);
     startIntxn.addOutRoad(startNode);
     this.intxnSet.add(startIntxn);
 
@@ -91,6 +91,8 @@ class RoadLSystem {
     // production & drawing
     for (var i = 0; i < this.iter; ++i) {
       let curNode: RoadLSystemNode = list.head;
+      console.log("iter: " + i);
+
       while (curNode !== null) {
         if (curNode.del > 0) {
           curNode.del -= 1;
@@ -100,88 +102,103 @@ class RoadLSystem {
           // use x-z as x-y
           if (this.ti.getHeightScaleShift(curNode.dstPos[0], curNode.dstPos[2], 100) > 0.65) {
             // consider the intxn grid
-            // 搜索intxn
-            //  有的话，找最近的，链接、放新的路到set
+            let potentialIntxn: RoadIntersection = this.findNearestIntxn(curNode.dstPos);
+            console.log("potentialIntxn: " + potentialIntxn);            
+            let goOnFlag = true;
+            if (potentialIntxn != null) {
+              let disToIntxn: number = vec3.distance(curNode.dstPos, potentialIntxn.pos);
+              console.log("min dis: " + disToIntxn);
+              if (disToIntxn < this.mergeToIntxnThreshold) {
+                
+                // TODO(zichuanyun) adjust dir and length of the road
+                curNode.setDstPos(potentialIntxn.pos);
+                curNode.intendLen = disToIntxn;
+                console.log(curNode);
 
-            //  没有的话，放置一个新的intxn
-            // let potentialIntxn: RoadIntersection = 
+                potentialIntxn.addInRoad(curNode);
+                goOnFlag = false;
+              }
 
-
-            if (true) {
-              // if in intxn, no more new road
-
-              break;
+            } else {
+              // console.log("need new intxn");
+              potentialIntxn = RoadIntersection.createAndPutToCell(curNode.dstPos, this);
+              this.intxnSet.add(potentialIntxn);
             }
+
             // only add node to global set when node is legal
-            this.roadSet.add(curNode);            
+            this.roadSet.add(curNode);   
 
-            // this node continues to go forward
-            let subNode: RoadLSystemNode = RoadLSystemNode.create(
-              list.length(), // id
-              0, // del
-              curNode.dstPos, // srcPos
-              curNode.intendAngle, // prev angle
-              curNode.angleOption, // prev angle
-              0 // angleOptionOffset
-            );
-            if (subNode.angleOption == 0 || subNode.angleOption == 2) {
-              subNode.intendLen = this.maxZLen;
+            if (goOnFlag) {    
+              // this node continues to go forward
+              let subNode: RoadLSystemNode = RoadLSystemNode.create(
+                list.length(), // id
+                0, // del
+                curNode.dstPos, // srcPos
+                curNode.intendAngle, // prev angle
+                curNode.angleOption, // prev angle
+                0 // angleOptionOffset
+              );
+              if (subNode.angleOption == 0 || subNode.angleOption == 2) {
+                subNode.intendLen = this.maxZLen;
+              } else {
+                subNode.intendLen = this.maxXLen;
+              }
+              subNode.calcDst();
+              list.insertBefore(curNode, subNode);
+
+              // new node 0
+              let branch_0: RoadLSystemNode = RoadLSystemNode.create(
+                list.length(), // id
+                0, // del
+                curNode.dstPos, // srcPos
+                curNode.intendAngle, // prev angle
+                curNode.angleOption, // prev angle
+                1 // angleOptionOffset
+              );
+              if (branch_0.angleOption == 0 || branch_0.angleOption == 2) {
+                branch_0.intendLen = this.maxZLen;
+              } else {
+                branch_0.intendLen = this.maxXLen;
+              }
+              branch_0.calcDst();
+              list.insertBefore(curNode, branch_0); 
+
+              // new node 1
+              let branch_1: RoadLSystemNode = RoadLSystemNode.create(
+                list.length(), // id
+                0, // del
+                curNode.dstPos, // srcPos
+                curNode.intendAngle, // prev angle
+                curNode.angleOption, // prev angle
+                -1 // angleOptionOffset
+              );
+              if (branch_1.angleOption == 0 || branch_1.angleOption == 2) {
+                branch_1.intendLen = this.maxZLen;
+              } else {
+                branch_1.intendLen = this.maxXLen;
+              }
+              branch_1.calcDst();
+              list.insertBefore(curNode, branch_1); 
+
             } else {
-              subNode.intendLen = this.maxXLen;
+              // TODO(zichuanyu) adjust, no more road is created (may create intxn)
+              // only when adjust is successful, add to roadSet
+              
             }
-            subNode.calcDst();
-            list.insertBefore(curNode, subNode);
-
-            // new node 0
-            let branch_0: RoadLSystemNode = RoadLSystemNode.create(
-              list.length(), // id
-              0, // del
-              curNode.dstPos, // srcPos
-              curNode.intendAngle, // prev angle
-              curNode.angleOption, // prev angle
-              1 // angleOptionOffset
-            );
-            if (branch_0.angleOption == 0 || branch_0.angleOption == 2) {
-              branch_0.intendLen = this.maxZLen;
-            } else {
-              branch_0.intendLen = this.maxXLen;
-            }
-            branch_0.calcDst();
-            list.insertBefore(curNode, branch_0); 
-
-            // new node 1
-            let branch_1: RoadLSystemNode = RoadLSystemNode.create(
-              list.length(), // id
-              0, // del
-              curNode.dstPos, // srcPos
-              curNode.intendAngle, // prev angle
-              curNode.angleOption, // prev angle
-              -1 // angleOptionOffset
-            );
-            if (branch_1.angleOption == 0 || branch_1.angleOption == 2) {
-              branch_1.intendLen = this.maxZLen;
-            } else {
-              branch_1.intendLen = this.maxXLen;
-            }
-            branch_1.calcDst();
-            list.insertBefore(curNode, branch_1); 
-
-          } else {
-            // TODO(zichuanyu) adjust, no more road is created (may create intxn)
-            // only when adjust is successful, add to roadSet
-            
           }
+            
           // no mater what, detach
           let preNode: RoadLSystemNode = curNode;
           curNode = curNode.next;
-          
           preNode.detach();
         }
-
       }
     }
     
     console.log(this.roadSet);
+    console.log(this.intxnSet);
+    console.log(this.intxnGrid);
+
     // write all data to buffer
     this.roadSet.forEach(fillArrayCallback.bind(this));
   }
@@ -189,28 +206,37 @@ class RoadLSystem {
   putInGrid(intxn: RoadIntersection, x: number, y: number) {
     x = Math.floor((x / this.scale + 0.5) * this.gridDim);
     y = Math.floor((y / this.scale + 0.5) * this.gridDim);
-    this.intxnSet.add(intxn);
+    this.intxnGrid[x][y].push(intxn);
   }
 
   findNearestIntxn(dstPos: vec3): RoadIntersection {
     let x: number = Math.floor((dstPos[0] / this.scale + 0.5) * this.gridDim);
     let y: number = Math.floor((dstPos[2] / this.scale + 0.5) * this.gridDim);
-
+    // TOOD(zichuanyun) search 9 cells
     let intxn: RoadIntersection = null;
     let minLen: number = this.scale;
-    let arrInCell: Array<RoadIntersection> = this.intxnGrid[x][y];
-    for (var i = 0; i < arrInCell.length; ++i) {
-      let curIntxn: RoadIntersection = arrInCell[i];
-      let curLen: number = vec3.distance(curIntxn.pos, dstPos);
-
+    for (var m = -1; m <= 1; ++m) {
+      for (var n = -1; n <= 1; ++n) {
+        var xm = x + m;
+        var ym = y + n;
+        if (xm < 0 || xm > this.gridDim || ym < 0 || ym > this.gridDim) {
+          continue;
+        }
+        let arrInCell: Array<RoadIntersection> = this.intxnGrid[x][y];
+        for (var i = 0; i < arrInCell.length; ++i) {
+          let curIntxn: RoadIntersection = arrInCell[i];
+          let curLen: number = vec3.distance(curIntxn.pos, dstPos);
+          if (curLen < minLen) {
+            minLen = curLen;
+            intxn = curIntxn;
+          }
+        }
+      }
     }
-
+    
+    
     return intxn;
-
   }
-
-
-
 }
 
 function fillArrayCallback(node: RoadLSystemNode) {
@@ -233,13 +259,15 @@ function fillArrayCallback(node: RoadLSystemNode) {
 
 // every node has a source intersection and dst intersection
 class RoadIntersection {
-  pos: vec3 = vec3.create();
+  pos: vec3;
   inRoads: Set<RoadLSystemNode> = new Set();
   outRoads: Set<RoadLSystemNode> = new Set();
 
-  constructor(pos: vec3) {
-    // TODO(zichuanyu) put into cell
-    vec3.copy(this.pos, pos);
+  static createAndPutToCell(pos: vec3, system: RoadLSystem): RoadIntersection {
+    let intxn: RoadIntersection = new RoadIntersection();
+    intxn.pos = vec3.clone(pos);
+    system.putInGrid(intxn, intxn.pos[0], intxn.pos[2]);
+    return intxn;
   }
 
   addInRoad(node: RoadLSystemNode) {
@@ -305,10 +333,12 @@ class RoadLSystemNode {
     vec3.copy(this.srcPos, src);
   }
 
+  setDstPos(dst: vec3) {
+    vec3.copy(this.dstPos, dst);
+  }
+
   calcDst() {
     let rad: number = this.intendAngle * Math.PI / 180;
-    console.log("angleOption: " + this.angleOption);
-    console.log("intendlen: " + this.intendLen);
     this.dstPos = vec3.fromValues(
       this.srcPos[0] + this.intendLen * Math.sin(rad),
       this.srcPos[1],
