@@ -21,6 +21,7 @@ let screenQuad: ScreenQuad;
 let time: number = 0.0;
 let lsystem: LSystem = new LSystem();
 let longCube: LongCube;
+let longCube2: LongCube;
 let branchCylinder: Mesh;
 let skullMesh: Mesh;
 let plane: Plane;
@@ -36,6 +37,8 @@ function loadScene() {
   screenQuad.create();
   longCube = new LongCube();
   longCube.create();
+  longCube2 = new LongCube();
+  longCube2.create();
   branchCylinder = new Mesh(cylinderString, vec3.fromValues(0, 0, 0));
   branchCylinder.create();
 
@@ -60,8 +63,8 @@ function updateBuffer() {
   let intxnRotQuats: Float32Array = new Float32Array(roadLSystem.intxnRotArray);
   // use the depth position for length
   let intxnDepths: Float32Array = new Float32Array(roadLSystem.intxnLenArray);
-  branchCylinder.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnDepths);
-  branchCylinder.setNumInstances(intxnDepths.length);
+  longCube2.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnDepths);
+  longCube2.setNumInstances(intxnDepths.length);
 }
 
 function writeGuiInfo() {
@@ -182,7 +185,7 @@ function main() {
     ]);
 
     renderer.render(camera, instancedIntxnShader, [
-      branchCylinder,
+      longCube2,
     ]);
 
     

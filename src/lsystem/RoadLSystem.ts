@@ -32,7 +32,7 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 3;
+  iter: number = 4;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
   initAngle: number = 0;
@@ -108,26 +108,24 @@ class RoadLSystem {
           if (this.ti.getHeightScaleShift(curNode.dstPos[0], curNode.dstPos[2], 100) > 0.65) {
             // consider the intxn grid
             let potentialIntxn: RoadIntersection = this.findNearestIntxn(curNode.dstPos);
-            console.log("potentialIntxn: " + potentialIntxn);            
-            let goOnFlag = true;
+            let disToIntxn: number = this.scale; // max at first
+            let goOnFlag: boolean = true;
             if (potentialIntxn != null) {
-              let disToIntxn: number = vec3.distance(curNode.dstPos, potentialIntxn.pos);
+              disToIntxn = vec3.distance(curNode.dstPos, potentialIntxn.pos);
               console.log("min dis: " + disToIntxn);
-              if (disToIntxn < this.mergeToIntxnThreshold) {
-                
-                // TODO(zichuanyun) adjust dir and length of the road
-                curNode.setDstPos(potentialIntxn.pos);
-                curNode.intendLen = disToIntxn;
-                console.log(curNode);
+            }
 
-                potentialIntxn.addInRoad(curNode);
-                goOnFlag = false;
-              }
-
+            if (potentialIntxn != null && disToIntxn < this.mergeToIntxnThreshold) {
+              // TODO(zichuanyun) adjust dir
+              curNode.setDstPos(potentialIntxn.pos);
+              curNode.intendLen = vec3.distance(curNode.srcPos, curNode.dstPos);
+              potentialIntxn.addInRoad(curNode);
+              goOnFlag = false;
             } else {
               // console.log("need new intxn");
               potentialIntxn = RoadIntersection.createAndPutToCell(curNode.dstPos, this);
               this.intxnSet.add(potentialIntxn);
+              potentialIntxn.addInRoad(curNode);
             }
 
             // only add node to global set when node is legal
@@ -269,7 +267,7 @@ function fillIntxnArrayCallback(intxn: RoadIntersection) {
   this.intxnPosArray.push(intxn.pos[2]);
 
   let q = quat.create();
-  quat.fromEuler(q, 0, 0, 0);
+  quat.fromEuler(q, -90, 0, 0);
   quat.normalize(q, q);
   this.intxnRotArray.push(q[0]);
   this.intxnRotArray.push(q[1]);
