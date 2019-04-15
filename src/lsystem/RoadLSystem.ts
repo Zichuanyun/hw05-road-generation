@@ -3,6 +3,15 @@ import SystemInfoObject from '../SystemInfoObject';
 import TerrainInfo from '../TerrainInfo';
 import { timingSafeEqual } from 'crypto';
 
+
+//  -----> x
+// |
+// |
+// |
+// v
+// z
+
+
 class RoadLSystem {
   si: SystemInfoObject;
   ti: TerrainInfo;
@@ -14,13 +23,14 @@ class RoadLSystem {
   intxnGrid: Array<Array<Array<RoadIntersection>>> = new Array();
   gridDim: number = 15;
 
-
   // Need export -------------------------------------------------
   maxZLen: number = 3;
   maxXLen: number = 3;
   edgeLen: number = 100;
-  iter: number = 1;
-  height_threshold = 0.65;
+  iter: number = 4;
+  height_threshold: number = 0.65;
+  angle_tolerant: number = 10.0;
+
   // end need export -------------------------------------------------
 
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
@@ -61,12 +71,18 @@ class RoadLSystem {
 
     // init the first node and intxn
     // TODO(zichuanyu) use worley cell as start point   
-    let startNode: RoadLSystemNode = new RoadLSystemNode(0);
-    startNode.prevRot = 0;
+    let startNode: RoadLSystemNode = new RoadLSystemNode();
+
+    // startNode.prevAngle = 0;
+    startNode.angleOption = 0;
+    startNode.prevAngleOption = 0;
+    startNode.chooseAngle(0);
+
     startNode.srcPos = vec3.fromValues(-45, 5, 0);
     startNode.intendLen = this.maxZLen;
     startNode.calcDst();
     let startIntxn: RoadIntersection = new RoadIntersection(startNode.srcPos);
+    
     startIntxn.addOutRoad(startNode);
     this.intxnSet.add(startIntxn);
 
@@ -86,58 +102,84 @@ class RoadLSystem {
           if (this.ti.getHeightScaleShift(curNode.dstPos[0], curNode.dstPos[2], 100) > 0.65) {
             // TODO(zichuanyu) consider the intxn grid
             // only add node to global set when node is legal
-            this.roadSet.add(curNode);
-
+            this.roadSet.add(curNode);            
 
             // continue this node
-            let subNode: RoadLSystemNode = new RoadLSystemNode(list.length());
-            
+            // let subNode: RoadLSystemNode = new RoadLSystemNode();
+            // subNode.setSrcPos(curNode.dstPos);
+            // subNode.del = 0;
+            // subNode.prevAngle = curNode.intendAngle;
+            // subNode.intendAngle = subNode.prevAngle;
 
-            list.insertBefore(curNode, subNode);
-
+            let subNode: RoadLSystemNode = RoadLSystemNode.create(
+              list.length(), // id
+              0, // del
+              curNode.dstPos, // srcPos
+              curNode.intendAngle, // prev angle
+              curNode.angleOption, // prev angle
+              0 // angleOptionOffset
+            );
+            subNode.intendLen = this.maxZLen;
+            subNode.calcDst();
+            list.insertBefore(curNode, subNode); 
 
             // new node 0
-            let branch_0: RoadLSystemNode = new RoadLSystemNode(list.length());
-            branch_0.setSrcPos(curNode.dstPos);
-            branch_0.del = 0;
-            branch_0.prevRot = curNode.intendRot;
-            branch_0.intendRot = branch_0.prevRot + 90;
+            // let branch_0: RoadLSystemNode = new RoadLSystemNode();
+            // branch_0.setSrcPos(curNode.dstPos);
+            // branch_0.del = 0;
+            // branch_0.prevAngle = curNode.intendAngle;
+            // branch_0.intendAngle = branch_0.prevAngle + 90;
+            // branch_0.intendLen = this.maxZLen;
+            // branch_0.calcDst();
+            // list.insertBefore(curNode, branch_0);
+
+            let branch_0: RoadLSystemNode = RoadLSystemNode.create(
+              list.length(), // id
+              0, // del
+              curNode.dstPos, // srcPos
+              curNode.intendAngle, // prev angle
+              curNode.angleOption, // prev angle
+              1 // angleOptionOffset
+            );
             branch_0.intendLen = this.maxZLen;
             branch_0.calcDst();
-            list.insertBefore(curNode, branch_0);
+            list.insertBefore(curNode, branch_0); 
 
             // new node 1
-            let branch_1: RoadLSystemNode = new RoadLSystemNode(list.length());
-            branch_1.setSrcPos(curNode.dstPos);
-            branch_1.del = 0;
-            branch_1.prevRot = curNode.intendRot;
-            branch_1.intendRot = branch_1.prevRot - 90;
+            // let branch_1: RoadLSystemNode = new RoadLSystemNode();
+            // branch_1.setSrcPos(curNode.dstPos);
+            // branch_1.del = 0;
+            // branch_1.prevAngle = curNode.intendAngle;
+            // branch_1.intendAngle = branch_1.prevAngle - 90;
+            // branch_1.intendLen = this.maxZLen;
+            // branch_1.calcDst();
+            // list.insertBefore(curNode, branch_1);
+
+            let branch_1: RoadLSystemNode = RoadLSystemNode.create(
+              list.length(), // id
+              0, // del
+              curNode.dstPos, // srcPos
+              curNode.intendAngle, // prev angle
+              curNode.angleOption, // prev angle
+              -1 // angleOptionOffset
+            );
             branch_1.intendLen = this.maxZLen;
             branch_1.calcDst();
-            list.insertBefore(curNode, branch_1);
+            list.insertBefore(curNode, branch_1); 
 
-            // original node keep going
-            curNode.setSrcPos(curNode.dstPos);
-            curNode.calcDst();
-
-            // HERE can not display
-            // add node to global set
           } else {
             // TODO(zichuanyu) adjust, no more road is created (may create intxn)
             // only when adjust is successful, add to roadSet
             
           }
+          // no mater what, detach
           let preNode: RoadLSystemNode = curNode;
           curNode = curNode.next;
+          
           preNode.detach();
         }
 
       }
-      
-
-
-
-
     }
     
     console.log(this.roadSet);
@@ -147,13 +189,12 @@ class RoadLSystem {
 }
 
 function fillArrayCallback(node: RoadLSystemNode) {
-  console.log(node);
   this.posArray.push(node.srcPos[0]);
   this.posArray.push(node.srcPos[1]);
   this.posArray.push(node.srcPos[2]);
 
   let q = quat.create();
-  quat.fromEuler(q, 0, node.intendRot, 0);
+  quat.fromEuler(q, 0, node.intendAngle, 0);
   // mat4.getRotation(q, transMat);
   quat.normalize(q, q);
   // HERE
@@ -190,19 +231,23 @@ class RoadIntersection {
 // both the road segment and the LSystem node
 // because we don't want a lot of copy and paste between memory
 class RoadLSystemNode {
-  static frontDir: vec4 = vec4.fromValues(0, 0, 1, 0);
-
-  id: number;
+  // the standard rotation
+  static initAngle: number = 30;
+  static dirOptions = [0, 90, 180, 270];
+  
+  id: number = 0;
+  angleOption: number = 0;
+  prevAngleOption: number = 0;
+  prevAngle: number = RoadLSystemNode.initAngle;
+  intendAngle: number = 0;
   // the node system
   del: number;
   srcPos: vec3 = vec3.create();
   dstPos: vec3 = vec3.create();
-  prevRot: number = 0;
-  intendRot: number = 0;
   
-  intendLen: number;
+  intendLen: number = 0;
 
-  isHeightWay: false;
+  isHeightWay: boolean = false;
 
   // intersection
   srcIntxn: RoadIntersection = null;
@@ -212,8 +257,25 @@ class RoadLSystemNode {
   next: RoadLSystemNode = null;
   prev: RoadLSystemNode = null;
 
-  constructor(id: number) {
-    this.id = id;
+  chooseAngle(offset: number) {
+    let option: number = ((offset + this.prevAngleOption) % 4 + 4)%4;
+    console.log("prevAngleOption: " + this.prevAngleOption);
+    console.log("option: " + option);
+    this.intendAngle = RoadLSystemNode.initAngle
+    + RoadLSystemNode.dirOptions[option];
+    console.log("angle: " + this.intendAngle);
+  }
+
+  static create(id: number, del: number, src: vec3,
+    prevAngle: number, prevAngleOption: number, angleOptionOffset: number): RoadLSystemNode {
+    let node: RoadLSystemNode = new RoadLSystemNode();
+    node.id = id;
+    node.del = del;
+    node.srcPos = vec3.clone(src);
+    node.prevAngle = prevAngle;
+    node.prevAngleOption = prevAngleOption;
+    node.chooseAngle(angleOptionOffset);
+    return node;
   }
 
   setSrcPos(src: vec3) {
@@ -221,10 +283,11 @@ class RoadLSystemNode {
   }
 
   calcDst() {
+    let rad: number = this.intendAngle * Math.PI / 180;
     this.dstPos = vec3.fromValues(
-      this.srcPos[0] + this.intendLen * Math.sin(this.intendRot),
+      this.srcPos[0] + this.intendLen * Math.sin(rad),
       this.srcPos[1],
-      this.srcPos[2] + this.intendLen * Math.cos(this.intendRot));
+      this.srcPos[2] + this.intendLen * Math.cos(rad));
   }
   
   detach() {
@@ -240,9 +303,6 @@ class RoadLSystemNode {
   }
 }
 
-class RoadTurtle {
-
-}
 
 class RoadLSystemList {
   private set: Set<RoadLSystemNode> = new Set();

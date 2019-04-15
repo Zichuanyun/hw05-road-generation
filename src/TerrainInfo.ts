@@ -107,6 +107,9 @@ class TerrainInfo {
   }
 
   getHeightScaleShift(x: number, y: number, s: number): number {
+    if (x < -s/2 || x > s/2 || y < -s/2 || y >s/2) {
+      return -1;
+    }
     return this.getHeight(x / s + 0.5, y / s + 0.5);
   }
 
