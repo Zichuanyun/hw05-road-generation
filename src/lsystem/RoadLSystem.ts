@@ -20,6 +20,11 @@ class RoadLSystem {
   posArray: Array<number> = new Array();
   rotArray: Array<number> = new Array();
   lenArray: Array<number> = new Array();
+
+  intxnPosArray: Array<number> = new Array();
+  intxnRotArray: Array<number> = new Array();
+  intxnLenArray: Array<number> = new Array();
+
   intxnGrid: Array<Array<Array<RoadIntersection>>> = new Array();
   gridDim: number = 15;
 
@@ -200,7 +205,8 @@ class RoadLSystem {
     console.log(this.intxnGrid);
 
     // write all data to buffer
-    this.roadSet.forEach(fillArrayCallback.bind(this));
+    this.roadSet.forEach(fillRoadArrayCallback.bind(this));
+    this.intxnSet.forEach(fillIntxnArrayCallback.bind(this));
   }
 
   putInGrid(intxn: RoadIntersection, x: number, y: number) {
@@ -239,7 +245,7 @@ class RoadLSystem {
   }
 }
 
-function fillArrayCallback(node: RoadLSystemNode) {
+function fillRoadArrayCallback(node: RoadLSystemNode) {
   this.posArray.push(node.srcPos[0]);
   this.posArray.push(node.srcPos[1]);
   this.posArray.push(node.srcPos[2]);
@@ -255,6 +261,22 @@ function fillArrayCallback(node: RoadLSystemNode) {
   this.rotArray.push(q[3]);
 
   this.lenArray.push(node.intendLen);
+}
+
+function fillIntxnArrayCallback(intxn: RoadIntersection) {
+  this.intxnPosArray.push(intxn.pos[0]);
+  this.intxnPosArray.push(intxn.pos[1]);
+  this.intxnPosArray.push(intxn.pos[2]);
+
+  let q = quat.create();
+  quat.fromEuler(q, 0, 0, 0);
+  quat.normalize(q, q);
+  this.intxnRotArray.push(q[0]);
+  this.intxnRotArray.push(q[1]);
+  this.intxnRotArray.push(q[2]);
+  this.intxnRotArray.push(q[3]);
+
+  this.intxnLenArray.push(1.0);
 }
 
 // every node has a source intersection and dst intersection

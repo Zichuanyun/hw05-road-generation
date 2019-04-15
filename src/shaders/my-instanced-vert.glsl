@@ -53,7 +53,7 @@ out vec4 fs_Pos;
 
 void main()
 {
-    fs_Col = vec4(vec3(vs_Depth * 0.3), 1.0);
+    fs_Col = vec4(1.0, 0.0, 1.0, 1.0);
     float taper = 0.5;
     mat4 transformMat = constructTransformationMat(
         vs_Translate,

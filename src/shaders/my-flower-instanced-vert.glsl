@@ -55,11 +55,11 @@ out vec4 fs_Nor;
 
 void main()
 {
-    fs_Col = vec4(1.0, vs_Depth * 0.2, 1.0, 1.0);
+    fs_Col = vec4(1.0, 1.0, 0.0, 1.0);
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,
-        vec3(0.0007)
+        vec3(1.0)
     );
     vec4 worldPos = transformMat * vs_Pos;
     fs_Nor = transformMat * vs_Nor;

@@ -6,7 +6,7 @@ import ScreenQuad from './geometry/ScreenQuad';
 import LongCube from './geometry/LongCube';
 import OpenGLRenderer from './rendering/gl/OpenGLRenderer';
 import Camera from './Camera';
-import {setGL, cylinderString, skullString} from './globals';
+import {setGL, cylinderString} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import LSystem from './lsystem/LSystem'
 import Mesh from './geometry/Mesh';
@@ -38,8 +38,6 @@ function loadScene() {
   longCube.create();
   branchCylinder = new Mesh(cylinderString, vec3.fromValues(0, 0, 0));
   branchCylinder.create();
-  skullMesh = new Mesh(skullString, vec3.fromValues(0, 0, 0));
-  skullMesh.create();
 
 
   plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 10, trInfo);
@@ -57,10 +55,13 @@ function updateBuffer() {
   let depths: Float32Array = new Float32Array(roadLSystem.lenArray);
   longCube.setInstanceVBOs(translates, rotQuats, depths);
   longCube.setNumInstances(depths.length);
-  console.log(translates);
-  console.log(rotQuats);
-  console.log(depths);
 
+  let intxnTranslates: Float32Array = new Float32Array(roadLSystem.intxnPosArray);
+  let intxnRotQuats: Float32Array = new Float32Array(roadLSystem.intxnRotArray);
+  // use the depth position for length
+  let intxnDepths: Float32Array = new Float32Array(roadLSystem.intxnLenArray);
+  branchCylinder.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnDepths);
+  branchCylinder.setNumInstances(intxnDepths.length);
 }
 
 function writeGuiInfo() {
@@ -146,6 +147,11 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/instanced-frag.glsl')),
   ]);
 
+  const instancedIntxnShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/my-flower-instanced-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/instanced-frag.glsl')),
+  ]);
+
   const flat = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/flat-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/flat-frag.glsl')),
@@ -174,6 +180,12 @@ function main() {
     renderer.render(camera, instancedShader, [
       longCube,
     ]);
+
+    renderer.render(camera, instancedIntxnShader, [
+      branchCylinder,
+    ]);
+
+    
 
     stats.end();
 
