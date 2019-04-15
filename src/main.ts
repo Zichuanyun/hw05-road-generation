@@ -85,7 +85,7 @@ function guiChangeCallback() {
   plane.create();
 
   // TODO(zichuanyu) change to road l system
-  lsystem.compute();
+  roadLSystem.compute();
   // TODO(zichuanyu) update this buffer function
   updateBuffer();
 }

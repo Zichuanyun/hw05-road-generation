@@ -32,10 +32,10 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 4;
+  iter: number = 50;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
-  initAngle: number = 0;
+  initAngle: number = 45;
   mergeToIntxnThreshold = 2;
 
   // end need export -------------------------------------------------
@@ -61,6 +61,9 @@ class RoadLSystem {
     this.posArray.length = 0;
     this.rotArray.length = 0;
     this.lenArray.length = 0;
+    this.intxnPosArray.length = 0;
+    this.intxnRotArray.length = 0;
+    this.intxnLenArray.length = 0;
     this.intxnGrid.length = 0;
 
     // x for first [], z for second []
