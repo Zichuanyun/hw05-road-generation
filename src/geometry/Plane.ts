@@ -35,7 +35,7 @@ class Plane extends Drawable {
     for(let x = 0; x <= width; ++x) {
       for(let z = 0; z <= width; ++z) {
         let h: number = this.ti.getHeight(x / width, z / width);
-        if (h > 0.65) {
+        if (h > TerrainInfo.heightThreshold) {
           h = 1;
         } else {
           h = 0;
@@ -52,10 +52,11 @@ class Plane extends Drawable {
         
         this.normals[posIdx] = 0;
         this.positions[posIdx++] = 1;
-
+        
+        let col: number = this.ti.getKernelDis(x / width, z / width);
+        this.colors[colIdx++] = col;
         this.colors[colIdx++] = h;
-        this.colors[colIdx++] = h;
-        this.colors[colIdx++] = h;
+        this.colors[colIdx++] = col;
         this.colors[colIdx++] = 1;
       }
     }

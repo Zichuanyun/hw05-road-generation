@@ -4,8 +4,12 @@ var hash = require('object-hash');
 
 class TerrainInfo {
 
+  static heightThreshold: number = 0.65;
   private seed: number = 0;
   private ratio: number = 1;
+  private tile: number = 5;
+  private validKernelPos: Array<vec2> = new Array();
+
   si: SystemInfoObject;
 
   private getHashInt(str: string): number {
@@ -18,6 +22,10 @@ class TerrainInfo {
     }
     return hash;
   };
+
+  private randomStrF1(s: string): number {
+    return (this.getHashInt(hash.MD5(s + s + s + this.seed)) / Math.PI % 1 + 1) / 2;
+  }
 
   private randomVec2F1(x: number, y: number): number {
     return (this.getHashInt(hash.MD5(x.toString() + y.toString() + this.seed)) / Math.PI % 1 + 1) / 2;
@@ -35,19 +43,45 @@ class TerrainInfo {
   compute() {
     this.seed = hash.sha1(this.si.globalSeed);
     this.ratio = this.si.mapWidthHeightRatio;
+    // clear all kernels before
+    this.validKernelPos.length = 0;
+    for (var i = 0; i < this.tile; ++i) {
+      for (var j = 0; j < this.tile; ++j) {
+        if (this.randomVec2F1(i, j) > TerrainInfo.heightThreshold) {
+          this.validKernelPos.push(vec2.fromValues(i, j));
+        }
+      }
+    }
+    console.log(this.validKernelPos);
+  }
+
+  // return a 0-1 pos
+  getRandomValidKernalPos(seed: string = "something"): vec2 {
+    let num = Math.floor(this.randomStrF1(seed) * this.validKernelPos.length);
+    let res = vec2.clone(this.randomVec2Vec2(this.validKernelPos[num]));
+    vec2.add(res, res, this.validKernelPos[num]);
+    vec2.scale(res, res, 1/this.tile);
+    return res;
   }
 
   getHeight(x: number, y: number): number {
-    return this.worleyHeight(x, y);
+    let val = this.worleyHeight(x, y);
+    // only return height
+    return val[0];
   }
 
-  private worleyHeight(x: number, y: number): number {
-    let tile: number = 5;
+  getKernelDis(x: number, y: number): number {
+    let val = this.worleyHeight(x, y);
+    // only return min dis
+    return val[1];
+  }
+
+  private worleyHeight(x: number, y: number) {
     
-    let xi = Math.floor(tile * x);
-    let yi = Math.floor(tile * y);
-    let xf = tile * x % 1;
-    let yf = tile * y % 1;
+    let xi = Math.floor(this.tile * x);
+    let yi = Math.floor(this.tile * y);
+    let xf = this.tile * x % 1;
+    let yf = this.tile * y % 1;
     
     let i_st: vec2 = vec2.fromValues(xi, yi);
     let f_st: vec2 = vec2.fromValues(xf, yf);
@@ -83,27 +117,14 @@ class TerrainInfo {
             }
         }
     }
-    let point: vec2 = this.randomVec2Vec2(myCell);
-    let threshold = 0.02;
+
+    // let point: vec2 = this.randomVec2Vec2(myCell);
+    // let threshold = 0.02;
     // worley cernel debugging
     // if (Math.abs(point[0] - x) < threshold && Math.abs(point[1] - y) < threshold) {
     //   return 3.0;
     // }
-    return this.randomVec2F1(myCell[0], myCell[1]);;
-  }
-
-  private gridHeight(x: number, y: number): number {
-    if (x < 0 || x > 1 || y < 0 || y > this.ratio) {
-      return 0;
-    }
-
-    let tile = 5;
-    let xi = Math.floor(tile * x);
-    let yi = Math.floor(tile * y);
-    let xf = tile * x % 1;
-    let yf = tile * y % 1;
-
-    return this.randomVec2F1(xi, yi);
+    return [this.randomVec2F1(myCell[0], myCell[1]), m_dist];
   }
 
   getHeightScaleShift(x: number, y: number, s: number): number {

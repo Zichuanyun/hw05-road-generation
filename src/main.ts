@@ -42,7 +42,6 @@ function loadScene() {
   branchCylinder = new Mesh(cylinderString, vec3.fromValues(0, 0, 0));
   branchCylinder.create();
 
-
   plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 10, trInfo);
   plane.create();
   plane.setNumInstances(1);

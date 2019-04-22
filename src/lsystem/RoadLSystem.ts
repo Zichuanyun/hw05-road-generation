@@ -39,7 +39,6 @@ class RoadLSystem {
   mergeToIntxnThreshold = 2;
 
   // end need export -------------------------------------------------
-
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
     this.si = si;
     this.ti = ti;
@@ -83,9 +82,13 @@ class RoadLSystem {
 
     startNode.angleOption = 0;
     startNode.prevAngleOption = 0;
-    startNode.chooseAngle(0);
+    startNode.chooseAngle(2);
 
-    startNode.srcPos = vec3.fromValues(-35, 5, 0);
+    let startP: vec2 = this.ti.getRandomValidKernalPos();
+    startP[0] = (startP[0] - 0.5) * this.scale;
+    startP[1] = (startP[1] - 0.5) * this.scale;
+    console.log("Here: " + startP);
+    startNode.srcPos = vec3.fromValues(startP[0], 5, startP[1]);
     startNode.intendLen = this.maxZLen;
     startNode.calcDst();
     // put into grid
@@ -99,8 +102,7 @@ class RoadLSystem {
     // production & drawing
     for (var i = 0; i < this.iter; ++i) {
       let curNode: RoadLSystemNode = list.head;
-      console.log("iter: " + i);
-
+      // console.log("iter: " + i);
       while (curNode !== null) {
         if (curNode.del > 0) {
           curNode.del -= 1;
@@ -108,14 +110,14 @@ class RoadLSystem {
           // do real stuff
           // if this place can have a road
           // use x-z as x-y
-          if (this.ti.getHeightScaleShift(curNode.dstPos[0], curNode.dstPos[2], 100) > 0.65) {
+          if (this.ti.getHeightScaleShift(curNode.dstPos[0], curNode.dstPos[2], 100) > TerrainInfo.heightThreshold) {
             // consider the intxn grid
             let potentialIntxn: RoadIntersection = this.findNearestIntxn(curNode.dstPos);
             let disToIntxn: number = this.scale; // max at first
             let goOnFlag: boolean = true;
             if (potentialIntxn != null) {
               disToIntxn = vec3.distance(curNode.dstPos, potentialIntxn.pos);
-              console.log("min dis: " + disToIntxn);
+              // console.log("min dis: " + disToIntxn);
             }
 
             if (potentialIntxn != null && disToIntxn < this.mergeToIntxnThreshold) {
