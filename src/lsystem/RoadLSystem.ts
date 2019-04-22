@@ -17,9 +17,10 @@ class RoadLSystem {
   ti: TerrainInfo;
   intxnSet: Set<RoadIntersection> = new Set();
   roadSet: Set<RoadLSystemNode> = new Set();
-  posArray: Array<number> = new Array();
-  rotArray: Array<number> = new Array();
-  lenArray: Array<number> = new Array();
+  roadPosArray: Array<number> = new Array();
+  roadRotArray: Array<number> = new Array();
+  roadLenArray: Array<number> = new Array();
+  roadWidthArray: Array<number> = new Array();
 
   intxnPosArray: Array<number> = new Array();
   intxnRotArray: Array<number> = new Array();
@@ -37,6 +38,8 @@ class RoadLSystem {
   angleTolerant: number = 10.0;
   initAngle: number = 45;
   mergeToIntxnThreshold = 2;
+
+  roadWidth: number = 0.5;
 
   // end need export -------------------------------------------------
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
@@ -57,9 +60,9 @@ class RoadLSystem {
     // zero out all members
     this.intxnSet.clear();
     this.roadSet.clear();
-    this.posArray.length = 0;
-    this.rotArray.length = 0;
-    this.lenArray.length = 0;
+    this.roadPosArray.length = 0;
+    this.roadRotArray.length = 0;
+    this.roadLenArray.length = 0;
     this.intxnPosArray.length = 0;
     this.intxnRotArray.length = 0;
     this.intxnLenArray.length = 0;
@@ -249,21 +252,23 @@ class RoadLSystem {
 }
 
 function fillRoadArrayCallback(node: RoadLSystemNode) {
-  this.posArray.push(node.srcPos[0]);
-  this.posArray.push(node.srcPos[1]);
-  this.posArray.push(node.srcPos[2]);
+  this.roadPosArray.push(node.srcPos[0]);
+  this.roadPosArray.push(node.srcPos[1]);
+  this.roadPosArray.push(node.srcPos[2]);
 
   let q = quat.create();
   quat.fromEuler(q, 0, node.intendAngle, 0);
   // mat4.getRotation(q, transMat);
   quat.normalize(q, q);
   // HERE
-  this.rotArray.push(q[0]);
-  this.rotArray.push(q[1]);
-  this.rotArray.push(q[2]);
-  this.rotArray.push(q[3]);
+  this.roadRotArray.push(q[0]);
+  this.roadRotArray.push(q[1]);
+  this.roadRotArray.push(q[2]);
+  this.roadRotArray.push(q[3]);
 
-  this.lenArray.push(node.intendLen);
+  this.roadLenArray.push(node.intendLen);
+
+  this.roadWidthArray.push(this.roadWidth);
 }
 
 function fillIntxnArrayCallback(intxn: RoadIntersection) {

@@ -56,8 +56,7 @@ out vec4 fs_Pos;
 void main()
 {
     fs_Col = vec4(1.0, 0.0, 1.0, 1.0);
-    float taper = vs_RoadWidth * 0.1;
-    float ttt = vs_Depth;
+    float taper = vs_RoadWidth;
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,
