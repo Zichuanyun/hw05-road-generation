@@ -145,12 +145,12 @@ function main() {
 
 
   const instancedShader = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, require('./shaders/my-instanced-vert.glsl')),
+    new Shader(gl.VERTEX_SHADER, require('./shaders/road-instanced-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/instanced-frag.glsl')),
   ]);
 
   const instancedIntxnShader = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, require('./shaders/my-flower-instanced-vert.glsl')),
+    new Shader(gl.VERTEX_SHADER, require('./shaders/intxn-instanced-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/instanced-frag.glsl')),
   ]);
 
