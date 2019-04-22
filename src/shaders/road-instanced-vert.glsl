@@ -47,6 +47,7 @@ in vec4 vs_Pos; // Non-instanced; each particle is the same quad drawn in a diff
 in vec3 vs_Translate; // Another instance rendering attribute used to position each quad instance in the scene
 in float vs_Depth;
 in float vs_RoadLength;
+in float vs_RoadWidth;
 in vec4 vs_RotQuat;
 
 out vec4 fs_Col;
@@ -55,7 +56,7 @@ out vec4 fs_Pos;
 void main()
 {
     fs_Col = vec4(1.0, 0.0, 1.0, 1.0);
-    float taper = 0.5;
+    float taper = vs_RoadWidth * 0.1;
     float ttt = vs_Depth;
     mat4 transformMat = constructTransformationMat(
         vs_Translate,

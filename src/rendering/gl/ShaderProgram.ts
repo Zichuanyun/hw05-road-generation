@@ -32,6 +32,7 @@ class ShaderProgram {
   attrDepth: number;
   attrRotQuat: number; // the whole rotation matrix
   attrRoadLength: number;
+  attrRoadWidth: number;
 
   unifModel: WebGLUniformLocation;
   unifModelInvTr: WebGLUniformLocation;
@@ -63,6 +64,7 @@ class ShaderProgram {
     this.attrDepth = gl.getAttribLocation(this.prog, "vs_Depth");
     this.attrRotQuat = gl.getAttribLocation(this.prog, "vs_RotQuat");
     this.attrRoadLength = gl.getAttribLocation(this.prog, "vs_RoadLength");
+    this.attrRoadWidth = gl.getAttribLocation(this.prog, "vs_RoadWidth");
 
     this.unifModel      = gl.getUniformLocation(this.prog, "u_Model");
     this.unifModelInvTr = gl.getUniformLocation(this.prog, "u_ModelInvTr");
@@ -73,16 +75,6 @@ class ShaderProgram {
     this.unifRef   = gl.getUniformLocation(this.prog, "u_Ref");
     this.unifUp   = gl.getUniformLocation(this.prog, "u_Up");
     this.unifDimensions = gl.getUniformLocation(this.prog, "u_Dimensions");
-
-    console.log("attrPos: " + this.attrPos);
-    console.log("attrTranslate: " + this.attrTranslate);
-    console.log("attrForward: " + this.attrForward);
-    console.log("attrDepth: " + this.attrDepth);
-    console.log("attrRotQuat: " + this.attrRotQuat);
-
-    console.log("attrCol: " + this.attrCol);
-    console.log("attrUV: " + this.attrUV);
-
   }
 
   use() {
@@ -202,6 +194,12 @@ class ShaderProgram {
       gl.enableVertexAttribArray(this.attrRoadLength);
       gl.vertexAttribPointer(this.attrRoadLength, 1, gl.FLOAT, false, 0, 0);
       gl.vertexAttribDivisor(this.attrRoadLength, 1);
+    }
+
+    if (this.attrRoadWidth != -1 && d.bindRoadWidth()) {
+      gl.enableVertexAttribArray(this.attrRoadWidth);
+      gl.vertexAttribPointer(this.attrRoadWidth, 1, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribDivisor(this.attrRoadWidth, 1);
     }
 
     d.bindIdx();

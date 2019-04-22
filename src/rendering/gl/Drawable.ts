@@ -12,9 +12,10 @@ abstract class Drawable {
   bufUV: WebGLBuffer;
 
   bufDepth: WebGLBuffer;
-  bufRoadLength: WebGLBuffer;
   bufForward: WebGLBuffer;
   bufRotQuat: WebGLBuffer;
+  bufRoadLength: WebGLBuffer;
+  bufRoadWidth: WebGLBuffer;
 
   idxGenerated: boolean = false;
   posGenerated: boolean = false;
@@ -23,9 +24,10 @@ abstract class Drawable {
   translateGenerated: boolean = false;
   uvGenerated: boolean = false;
   depthGenerated: boolean = false;
-  roadLengthGenerated: boolean = false;
   forwardGenerated: boolean = false;
   rotQuatGenerated: boolean = false;
+  roadLengthGenerated: boolean = false;
+  roadWidthGenerated: boolean = false;
 
 
   numInstances: number = 0; // How many instances of this Drawable the shader program should draw
@@ -40,9 +42,10 @@ abstract class Drawable {
     gl.deleteBuffer(this.bufTranslate);
     gl.deleteBuffer(this.bufUV);
     gl.deleteBuffer(this.bufDepth);
-    gl.deleteBuffer(this.bufRoadLength);
     gl.deleteBuffer(this.bufForward);
     gl.deleteBuffer(this.bufRotQuat);
+    gl.deleteBuffer(this.bufRoadLength);
+    gl.deleteBuffer(this.bufRoadWidth);
   }
 
   generateIdx() {
@@ -85,14 +88,19 @@ abstract class Drawable {
     this.bufDepth = gl.createBuffer();
   }
 
+  generateRotMat() {
+    this.rotQuatGenerated = true;
+    this.bufRotQuat = gl.createBuffer();
+  }
+
   generateRoadLength() {
     this.roadLengthGenerated = true;
     this.bufRoadLength = gl.createBuffer();
   }
 
-  generateRotMat() {
-    this.rotQuatGenerated = true;
-    this.bufRotQuat = gl.createBuffer();
+  generateRoadWidth() {
+    this.roadWidthGenerated = true;
+    this.bufRoadWidth = gl.createBuffer();
   }
 
   bindIdx(): boolean {
@@ -151,6 +159,13 @@ abstract class Drawable {
     return this.depthGenerated;
   }
 
+  bindRotQuat(): boolean {
+    if (this.rotQuatGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotQuat);
+    }
+    return this.rotQuatGenerated;
+  }
+
   bindRoadLength(): boolean {
     if (this.roadLengthGenerated) {
       gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadLength);
@@ -158,11 +173,11 @@ abstract class Drawable {
     return this.roadLengthGenerated;
   }
 
-  bindRotQuat(): boolean {
-    if (this.rotQuatGenerated) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotQuat);
+  bindRoadWidth(): boolean {
+    if (this.roadWidthGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadWidth);
     }
-    return this.rotQuatGenerated;
+    return this.roadWidthGenerated;
   }
 
   elemCount(): number {

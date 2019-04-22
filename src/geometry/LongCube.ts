@@ -12,6 +12,7 @@ class LongCube extends Drawable {
   depths: Float32Array;
   rotQuats: Float32Array;
   roadLengths: Float32Array;
+  roadWidths: Float32Array;
 
   constructor() {
     super(); // Call the constructor of the super class. This is required.
@@ -51,8 +52,9 @@ class LongCube extends Drawable {
     this.generateIdx();
     this.generatePos();
     this.generateTranslate();
-    this.generateRoadLength();
     this.generateRotMat();
+    this.generateRoadLength();
+    this.generateRoadWidth();
 
     this.count = this.indices.length;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.bufIdx);
@@ -64,10 +66,12 @@ class LongCube extends Drawable {
     console.log(`Created long cube`);
   }
 
-  setInstanceVBOs(translates: Float32Array, rotMats: Float32Array, roadLengths: Float32Array) {
+  setInstanceVBOs(translates: Float32Array, rotMats: Float32Array,
+    roadLengths: Float32Array, roadWidths: Float32Array) {
     this.translates = translates;
     this.rotQuats = rotMats;
     this.roadLengths = roadLengths;
+    this.roadWidths = roadWidths;
 
     // translation
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufTranslate);
@@ -77,9 +81,13 @@ class LongCube extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotQuat);
     gl.bufferData(gl.ARRAY_BUFFER, this.rotQuats, gl.STATIC_DRAW);
 
-    // length
+    // road length
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadLength);
     gl.bufferData(gl.ARRAY_BUFFER, this.roadLengths, gl.STATIC_DRAW);
+
+    // road width
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadWidth);
+    gl.bufferData(gl.ARRAY_BUFFER, this.roadWidths, gl.STATIC_DRAW);
   }
 };
 
