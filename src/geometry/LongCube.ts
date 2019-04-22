@@ -11,6 +11,7 @@ class LongCube extends Drawable {
   forwards: Float32Array;
   depths: Float32Array;
   rotQuats: Float32Array;
+  roadLengths: Float32Array;
 
   constructor() {
     super(); // Call the constructor of the super class. This is required.
@@ -50,7 +51,7 @@ class LongCube extends Drawable {
     this.generateIdx();
     this.generatePos();
     this.generateTranslate();
-    this.generateDepth();
+    this.generateRoadLength();
     this.generateRotMat();
 
     this.count = this.indices.length;
@@ -63,10 +64,10 @@ class LongCube extends Drawable {
     console.log(`Created long cube`);
   }
 
-  setInstanceVBOs(translates: Float32Array, rotMats: Float32Array, depths: Float32Array) {
+  setInstanceVBOs(translates: Float32Array, rotMats: Float32Array, roadLengths: Float32Array) {
     this.translates = translates;
     this.rotQuats = rotMats;
-    this.depths = depths;
+    this.roadLengths = roadLengths;
 
     // translation
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufTranslate);
@@ -76,9 +77,9 @@ class LongCube extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRotQuat);
     gl.bufferData(gl.ARRAY_BUFFER, this.rotQuats, gl.STATIC_DRAW);
 
-    // recursion depth
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufDepth);
-    gl.bufferData(gl.ARRAY_BUFFER, this.depths, gl.STATIC_DRAW);
+    // length
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadLength);
+    gl.bufferData(gl.ARRAY_BUFFER, this.roadLengths, gl.STATIC_DRAW);
   }
 };
 

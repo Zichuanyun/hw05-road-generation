@@ -12,6 +12,7 @@ abstract class Drawable {
   bufUV: WebGLBuffer;
 
   bufDepth: WebGLBuffer;
+  bufRoadLength: WebGLBuffer;
   bufForward: WebGLBuffer;
   bufRotQuat: WebGLBuffer;
 
@@ -22,6 +23,7 @@ abstract class Drawable {
   translateGenerated: boolean = false;
   uvGenerated: boolean = false;
   depthGenerated: boolean = false;
+  roadLengthGenerated: boolean = false;
   forwardGenerated: boolean = false;
   rotQuatGenerated: boolean = false;
 
@@ -38,6 +40,7 @@ abstract class Drawable {
     gl.deleteBuffer(this.bufTranslate);
     gl.deleteBuffer(this.bufUV);
     gl.deleteBuffer(this.bufDepth);
+    gl.deleteBuffer(this.bufRoadLength);
     gl.deleteBuffer(this.bufForward);
     gl.deleteBuffer(this.bufRotQuat);
   }
@@ -80,6 +83,11 @@ abstract class Drawable {
   generateDepth() {
     this.depthGenerated = true;
     this.bufDepth = gl.createBuffer();
+  }
+
+  generateRoadLength() {
+    this.roadLengthGenerated = true;
+    this.bufRoadLength = gl.createBuffer();
   }
 
   generateRotMat() {
@@ -141,6 +149,13 @@ abstract class Drawable {
       gl.bindBuffer(gl.ARRAY_BUFFER, this.bufDepth);
     }
     return this.depthGenerated;
+  }
+
+  bindRoadLength(): boolean {
+    if (this.roadLengthGenerated) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadLength);
+    }
+    return this.roadLengthGenerated;
   }
 
   bindRotQuat(): boolean {

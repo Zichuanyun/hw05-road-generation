@@ -1,6 +1,7 @@
 import {vec3, vec4, mat4, mat3} from 'gl-matrix';
 import Drawable from './Drawable';
 import {gl} from '../../globals';
+import { getPackedSettings } from 'http2';
 
 var activeProgram: WebGLProgram = null;
 
@@ -30,6 +31,7 @@ class ShaderProgram {
   attrForward: number; // facing what forward direction
   attrDepth: number;
   attrRotQuat: number; // the whole rotation matrix
+  attrRoadLength: number;
 
   unifModel: WebGLUniformLocation;
   unifModelInvTr: WebGLUniformLocation;
@@ -60,6 +62,7 @@ class ShaderProgram {
     this.attrForward = gl.getAttribLocation(this.prog, "vs_Forward");
     this.attrDepth = gl.getAttribLocation(this.prog, "vs_Depth");
     this.attrRotQuat = gl.getAttribLocation(this.prog, "vs_RotQuat");
+    this.attrRoadLength = gl.getAttribLocation(this.prog, "vs_RoadLength");
 
     this.unifModel      = gl.getUniformLocation(this.prog, "u_Model");
     this.unifModelInvTr = gl.getUniformLocation(this.prog, "u_ModelInvTr");
@@ -193,6 +196,12 @@ class ShaderProgram {
       gl.enableVertexAttribArray(this.attrRotQuat);
       gl.vertexAttribPointer(this.attrRotQuat, 4, gl.FLOAT, false, 0, 0);
       gl.vertexAttribDivisor(this.attrRotQuat, 1);
+    }
+
+    if (this.attrRoadLength != -1 && d.bindRoadLength()) {
+      gl.enableVertexAttribArray(this.attrRoadLength);
+      gl.vertexAttribPointer(this.attrRoadLength, 1, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribDivisor(this.attrRoadLength, 1);
     }
 
     d.bindIdx();

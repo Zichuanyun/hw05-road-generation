@@ -53,10 +53,10 @@ function loadScene() {
 function updateBuffer() {
   let translates: Float32Array = new Float32Array(roadLSystem.posArray);
   let rotQuats: Float32Array = new Float32Array(roadLSystem.rotArray);
-  // use the depth position for length
-  let depths: Float32Array = new Float32Array(roadLSystem.lenArray);
-  longCube.setInstanceVBOs(translates, rotQuats, depths);
-  longCube.setNumInstances(depths.length);
+  let roadLengths: Float32Array = new Float32Array(roadLSystem.lenArray);
+  longCube.setInstanceVBOs(translates, rotQuats, roadLengths);
+  console.log(longCube.roadLengths);
+  longCube.setNumInstances(roadLengths.length);
 
   let intxnTranslates: Float32Array = new Float32Array(roadLSystem.intxnPosArray);
   let intxnRotQuats: Float32Array = new Float32Array(roadLSystem.intxnRotArray);

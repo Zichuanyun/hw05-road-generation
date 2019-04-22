@@ -70,7 +70,7 @@ class Square extends Drawable {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.bufForward);
     gl.bufferData(gl.ARRAY_BUFFER, this.forwards, gl.STATIC_DRAW);
     // recursion depth
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufDepth);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufRoadLength);
     gl.bufferData(gl.ARRAY_BUFFER, this.depths, gl.STATIC_DRAW);
   }
 };
