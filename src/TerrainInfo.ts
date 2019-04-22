@@ -76,6 +76,19 @@ class TerrainInfo {
     return val[1];
   }
 
+  getHeightAndDis(x: number, y: number) {
+    return this.worleyHeight(x, y);
+  }
+
+  getHeightAndDisScaleShift(x: number, y: number, s: number) {
+    if (x < -s/2 || x > s/2 || y < -s/2 || y >s/2) {
+      return [-1, -1];
+    }
+    return this.getHeightAndDis(x / s + 0.5, y / s + 0.5);
+  }
+
+  
+
   private worleyHeight(x: number, y: number) {
     
     let xi = Math.floor(this.tile * x);

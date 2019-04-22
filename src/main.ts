@@ -91,7 +91,7 @@ function guiChangeCallback() {
 }
 
 const controls = {
-  'seed': 'seed',
+  'seed': 'seed seed',
   'block max x size': 1,
   'block max z size': 0.8,
   'width height ratio': 1,
