@@ -49,7 +49,7 @@ class RoadLSystem {
   highwayWidth: number = 0.8;
   highwayLen: number = 10;
   highwaySearchRadius: number = 10;
-  highwaySearchCount: number = 6;
+  highwaySearchAngleRange: number = 60;
 
   // end need export -------------------------------------------------
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
@@ -105,18 +105,21 @@ class RoadLSystem {
     startNode.intendLen = this.highwayLen;
 
     // choose dir according to population
-    let mostPop = this.highwaySearchMostPopulation(startP);
-    startNode.setDstPos(vec3.fromValues(mostPop[0],
+    let mostPopDir = this.highwaySearchMostPopulationDir(startP,
+      this.highwaySearchRadius, this.highwaySearchAngleRange,
+      startNode.intendAngle);
+    startNode.setDstPos(vec3.fromValues(mostPopDir[0]*startNode.intendLen + startP[0],
                                         this.levitation,
-                                        mostPop[1]));
-    startNode.calcAngleAndLength();
-    // HERE angle is done, may need to modify how 
+                                        mostPopDir[1]*startNode.intendLen + startP[1]));
 
-    startNode.angleOption = 0;
-    startNode.prevAngleOption = 0;
-    startNode.chooseAngle(2);
+    startNode.calcAngle(startNode.dstPos);
+    // HERE angle is done, may need to modify how
+    
 
-    startNode.calcDst();
+    // startNode.angleOption = 0;
+    // startNode.prevAngleOption = 0;
+    // startNode.chooseAngle(2);
+    // startNode.calcDst();
 
     // put into grid
     let startIntxn: RoadIntersection
@@ -140,9 +143,8 @@ class RoadLSystem {
             100);
           if (curNode.isHeightWay) {
             // highway and normal node are different
-
+            this.roadSet.add(curNode);  
             
-
             // if is sea, can still forward
             //  use same origin, but different dst
             //  when out of bound, then kill
@@ -257,9 +259,55 @@ class RoadLSystem {
     this.intxnSet.forEach(fillIntxnArrayCallback.bind(this));
   }
 
-  highwaySearchMostPopulation(src: vec2): vec2 {
-    // TODO(zichuanyu)
-    return vec2.fromValues(0, 0);
+  highwaySearchMostPopulationDir(src: vec2, radius: number,
+    angleRange: number, baseAngle: number): vec2 {
+    // HERE
+    // always keep the intend dir
+
+    // need export -------
+    let spacialSampleRate: number = 5;
+    let angularSampleRate: number = 5; // may not be correct
+    // need export -------
+
+    // const
+    let forwardStep: number = radius / Math.max(1, spacialSampleRate);
+    let angleStep: number = angleRange / Math.max(1, angularSampleRate);
+    // per angle
+    let frontiers: Array<vec2> = new Array();
+    let forwardDirs: Array<vec2> = new Array();
+    let sumPop: Array<number> = new Array();
+
+    for (var i =  Math.floor(angularSampleRate / 2); i >= (-(angularSampleRate / 2) | 0); --i) {
+      let angle: number = baseAngle + angleStep * i;
+      forwardDirs.push(vec2.fromValues(Math.sin(angle) * forwardStep, Math.cos(angle) * forwardStep));
+      frontiers.push(vec2.clone(src));
+      sumPop.push(0);
+    }
+
+    for (var i = 0; i < spacialSampleRate; ++i) {
+      // per step
+      for (var j = 0; j < angularSampleRate; ++j) {
+        // per angle
+        vec2.add(frontiers[j], frontiers[j], forwardDirs[j]);
+        let pop: number = 1 - this.terrainInfo.getKernelDisSacle(frontiers[j][0], frontiers[j][1], this.scale);
+        if (pop > 1) {
+          // means this is out of range, happens at edges
+          pop = 0;
+        }
+        sumPop[j] += pop;
+      }
+    }
+
+    let choose: vec2 = vec2.fromValues(Math.sin(baseAngle), Math.cos(baseAngle));
+    let maxPop = 0.000001;
+    for (var i = 0; i < sumPop.length; ++i) {
+      if (sumPop[i] > maxPop) {
+        maxPop = sumPop[i];
+        choose = forwardDirs[i];
+      }
+    }
+
+    return vec2.normalize(choose, choose);
   }
 
   putInGrid(intxn: RoadIntersection, x: number, y: number) {
@@ -306,7 +354,7 @@ function fillRoadArrayCallback(node: RoadLSystemNode) {
   quat.fromEuler(q, 0, node.intendAngle, 0);
   // mat4.getRotation(q, transMat);
   quat.normalize(q, q);
-  // HERE
+
   this.roadRotArray.push(q[0]);
   this.roadRotArray.push(q[1]);
   this.roadRotArray.push(q[2]);
@@ -314,7 +362,11 @@ function fillRoadArrayCallback(node: RoadLSystemNode) {
 
   this.roadLenArray.push(node.intendLen);
 
-  this.roadWidthArray.push(this.roadWidth);
+  let width: number = this.roadWidth;
+  if (node.isHeightWay) {
+    width = this.highwayWidth;
+  }
+  this.roadWidthArray.push(width);
 }
 
 function fillIntxnArrayCallback(intxn: RoadIntersection) {
@@ -389,6 +441,7 @@ class RoadLSystemNode {
   chooseAngle(offset: number) {
     let option: number = ((offset + this.prevAngleOption) % 4 + 4)%4;
     this.angleOption = option;
+    // TODO(zichuanyu) maybe use prevAngle here?
     this.intendAngle = RoadLSystemNode.initAngle
     + RoadLSystemNode.angleOptions[option];
   }
@@ -402,6 +455,16 @@ class RoadLSystemNode {
     node.prevAngle = prevAngle;
     node.prevAngleOption = prevAngleOption;
     node.chooseAngle(angleOptionOffset);
+    return node;
+  }
+
+  static createHighway(id: number, del: number, src: vec3, target: vec3): RoadLSystemNode {
+    let node: RoadLSystemNode = new RoadLSystemNode();
+    node.id = id;
+    node.del = del;
+    node.srcPos = vec3.clone(src);
+    node.calcAngle(target);
+    node.isHeightWay = true;
     return node;
   }
 
@@ -423,6 +486,7 @@ class RoadLSystemNode {
   }
 
   // given src and dst
+  // may not be right
   calcAngleAndLength() {
     let src2Dst: vec3 = vec3.create();
     vec3.sub(src2Dst, this.dstPos, this.srcPos);
@@ -430,6 +494,19 @@ class RoadLSystemNode {
     // VERY
     let angle = vec3.angle(RoadLSystem.GlobalZForward, src2Dst);
     if (src2Dst[0] > 0) {
+      this.intendAngle = angle;
+    } else {
+      this.intendAngle = -angle;
+    }
+  }
+  // given src and a target (may be nearer than dst)
+  calcAngle(target: vec3) {
+    let src2Target: vec3 = vec3.create();
+    vec3.sub(src2Target, target, this.srcPos);
+    // 2 cases according to x value
+    // VERF
+    let angle = vec3.angle(RoadLSystem.GlobalZForward, src2Target) * 180 / Math.PI;
+    if (src2Target[0] > 0) {
       this.intendAngle = angle;
     } else {
       this.intendAngle = -angle;

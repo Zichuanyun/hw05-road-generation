@@ -4,7 +4,7 @@ var hash = require('object-hash');
 
 class TerrainInfo {
 
-  static heightThreshold: number = 0.65;
+  static heightThreshold: number = 0.25;
   private seed: number = 0;
   private ratio: number = 1;
   private tile: number = 5;
@@ -52,7 +52,7 @@ class TerrainInfo {
         }
       }
     }
-    console.log(this.validKernelPos);
+    console.log("valid kernels: " + this.validKernelPos);
   }
 
   // return a 0-1 pos
@@ -72,6 +72,12 @@ class TerrainInfo {
 
   getKernelDis(x: number, y: number): number {
     let val = this.worleyHeight(x, y);
+    // only return min dis
+    return val[1];
+  }
+
+  getKernelDisSacle(x: number, y: number, s: number): number {
+    let val = this.getHeightAndDisScaleShift(x, y, s);
     // only return min dis
     return val[1];
   }

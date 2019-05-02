@@ -42,7 +42,7 @@ function loadScene() {
   branchCylinder = new Mesh(cylinderString, vec3.fromValues(0, 0, 0));
   branchCylinder.create();
 
-  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 10, trInfo);
+  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 11, trInfo);
   plane.create();
   plane.setNumInstances(1);
 
@@ -56,15 +56,21 @@ function updateBuffer() {
   let roadLengths: Float32Array = new Float32Array(roadLSystem.roadLenArray);
   let roadWidths: Float32Array = new Float32Array(roadLSystem.roadWidthArray);
   longCube.setInstanceVBOs(translates, rotQuats, roadLengths, roadWidths);
-  console.log(longCube.roadLengths);
+  console.log("translates: " + translates.length);
+  console.log("rotQuats: " + rotQuats.length);
+  console.log("roadLengths: " + roadLengths.length);
+  console.log("roadWidths: " + roadWidths.length);
+
   longCube.setNumInstances(roadLengths.length);
 
   let intxnTranslates: Float32Array = new Float32Array(roadLSystem.intxnPosArray);
   let intxnRotQuats: Float32Array = new Float32Array(roadLSystem.intxnRotArray);
   // use the depth position for length
-  let intxnDepths: Float32Array = new Float32Array(roadLSystem.intxnLenArray);
-  longCube2.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnDepths, roadLengths);
-  longCube2.setNumInstances(intxnDepths.length);
+  let intxnLengths: Float32Array = new Float32Array(roadLSystem.intxnLenArray);
+  longCube2.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnLengths, intxnLengths);
+  console.log("intxnLengths: " + intxnLengths.length);  
+  longCube2.setNumInstances(intxnLengths.length);
+
 }
 
 function writeGuiInfo() {
@@ -180,6 +186,8 @@ function main() {
     renderer.render(camera, lambert, [
       plane,
     ]);
+
+    // road
     renderer.render(camera, instancedShader, [
       longCube,
     ]);
@@ -187,9 +195,6 @@ function main() {
     renderer.render(camera, instancedIntxnShader, [
       longCube2,
     ]);
-
-    
-
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame
@@ -201,9 +206,9 @@ function main() {
     camera.setAspectRatio(window.innerWidth / window.innerHeight);
     camera.updateProjectionMatrix();
     flat.setDimensions(window.innerWidth, window.innerHeight);
-    console.log(window.innerWidth);
-    console.log(window.innerHeight);
-    console.log(window.innerHeight / window.innerWidth);
+    // console.log(window.innerWidth);
+    // console.log(window.innerHeight);
+    // console.log(window.innerHeight / window.innerWidth);
 
   }, false);
 
