@@ -38,7 +38,7 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 4;
+  iter: number = 20;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
   initAngle: number = 45;
@@ -50,7 +50,9 @@ class RoadLSystem {
   highwayWidth: number = 1.5;
   highwayLen: number = 10;
   highwaySearchRadius: number = 10;
-  highwaySearchAngleRange: number = 30;
+  highwaySearchAngleRange: number = 60;
+  popSearchSpacialSampleRage: number = 5;
+  popSearchAngularSampleRage: number = 5;
 
   // end need export -------------------------------------------------
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
@@ -114,7 +116,15 @@ class RoadLSystem {
                                         this.levitation,
                                         mostPopDir[1]*startNode.intendLen + startP[1]));
 
+
+                                        
+    // make sop
+    console.log("calc mostPopDir: " + mostPopDir);
+    console.log("calc src pos: " + startNode.srcPos);
+    console.log("calc dst pos: " + startNode.dstPos);
+    
     startNode.calcAngle(startNode.dstPos);
+    console.log("calc start angle: " + startNode.intendAngle);
 
     // put into grid
     let startIntxn: RoadIntersection
@@ -290,32 +300,34 @@ class RoadLSystem {
 
   highwaySearchMostPopulationDir(src: vec2, radius: number,
     angleRange: number, baseAngle: number): vec2 {
-    // HERE
     // always keep the intend dir
 
     // need export -------
-    let spacialSampleRate: number = 5;
-    let angularSampleRate: number = 5; // may not be correct
+    let spRate: number = this.popSearchSpacialSampleRage;
+    let angleRate: number = this.popSearchAngularSampleRage; // may not be correct
     // need export -------
 
     // const
-    let forwardStep: number = radius / Math.max(1, spacialSampleRate);
-    let angleStep: number = angleRange / Math.max(1, angularSampleRate);
+    let forwardStep: number = radius / Math.max(1, spRate);
+    let angleStep: number = angleRange / Math.max(1, angleRate);
     // per angle
     let frontiers: Array<vec2> = new Array();
     let forwardDirs: Array<vec2> = new Array();
     let sumPop: Array<number> = new Array();
 
-    for (var i =  Math.floor(angularSampleRate / 2); i >= (-(angularSampleRate / 2) | 0); --i) {
-      let angle: number = baseAngle + angleStep * i;
+    console.log("--------------");
+    for (var i =  Math.floor(angleRate / 2); i >= (-(angleRate / 2) | 0); --i) {
+      let angle: number = (baseAngle + angleStep * i) * Math.PI / 180.0;
+      console.log(angle);
       forwardDirs.push(vec2.fromValues(Math.sin(angle) * forwardStep, Math.cos(angle) * forwardStep));
       frontiers.push(vec2.clone(src));
       sumPop.push(0);
     }
+    console.log("--------------");
 
-    for (var i = 0; i < spacialSampleRate; ++i) {
+    for (var i = 0; i < spRate; ++i) {
       // per step
-      for (var j = 0; j < angularSampleRate; ++j) {
+      for (var j = 0; j < angleRate; ++j) {
         // per angle
         vec2.add(frontiers[j], frontiers[j], forwardDirs[j]);
         let pop: number = 1 - this.terrainInfo.getKernelDisSacle(frontiers[j][0], frontiers[j][1], this.scale);
@@ -329,6 +341,7 @@ class RoadLSystem {
 
     let choose: vec2 = vec2.fromValues(Math.sin(baseAngle), Math.cos(baseAngle));
     let maxPop = 0.000001;
+    let chooseNum: number = 0;
     for (var i = 0; i < sumPop.length; ++i) {
       if (sumPop[i] > maxPop) {
         maxPop = sumPop[i];
@@ -336,7 +349,9 @@ class RoadLSystem {
       }
     }
 
-    return vec2.normalize(choose, choose);
+    vec2.normalize(choose, choose);
+    console.log("choose: " + chooseNum + " " + choose);
+    return choose;
   }
 
   putInGrid(intxn: RoadIntersection, x: number, y: number) {
