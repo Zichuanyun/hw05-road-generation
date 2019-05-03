@@ -42,7 +42,7 @@ function loadScene() {
   branchCylinder = new Mesh(cylinderString, vec3.fromValues(0, 0, 0));
   branchCylinder.create();
 
-  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 11, trInfo);
+  plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(scale,scale), 9, trInfo);
   plane.create();
   plane.setNumInstances(1);
 
@@ -67,7 +67,9 @@ function updateBuffer() {
   let intxnRotQuats: Float32Array = new Float32Array(roadLSystem.intxnRotArray);
   // use the depth position for length
   let intxnLengths: Float32Array = new Float32Array(roadLSystem.intxnLenArray);
-  longCube2.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnLengths, intxnLengths);
+  let intxnWidths: Float32Array = new Float32Array(roadLSystem.intxnWidthArray);
+  
+  longCube2.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnLengths, intxnWidths);
   console.log("intxnLengths: " + intxnLengths.length);  
   longCube2.setNumInstances(intxnLengths.length);
 

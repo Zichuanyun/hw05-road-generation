@@ -25,6 +25,7 @@ class RoadLSystem {
   intxnPosArray: Array<number> = new Array();
   intxnRotArray: Array<number> = new Array();
   intxnLenArray: Array<number> = new Array();
+  intxnWidthArray: Array<number> = new Array();
 
   intxnGrid: Array<Array<Array<RoadIntersection>>> = new Array();
   gridDim: number = 15;
@@ -37,7 +38,7 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 50;
+  iter: number = 4;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
   initAngle: number = 45;
@@ -46,10 +47,10 @@ class RoadLSystem {
   roadWidth: number = 0.5;
 
   // highway
-  highwayWidth: number = 0.8;
+  highwayWidth: number = 1.5;
   highwayLen: number = 10;
   highwaySearchRadius: number = 10;
-  highwaySearchAngleRange: number = 60;
+  highwaySearchAngleRange: number = 30;
 
   // end need export -------------------------------------------------
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
@@ -79,6 +80,7 @@ class RoadLSystem {
     this.intxnPosArray.length = 0;
     this.intxnRotArray.length = 0;
     this.intxnLenArray.length = 0;
+    this.intxnWidthArray.length = 0;
 
     this.intxnGrid.length = 0;
 
@@ -113,13 +115,6 @@ class RoadLSystem {
                                         mostPopDir[1]*startNode.intendLen + startP[1]));
 
     startNode.calcAngle(startNode.dstPos);
-    // HERE angle is done, may need to modify how
-    
-
-    // startNode.angleOption = 0;
-    // startNode.prevAngleOption = 0;
-    // startNode.chooseAngle(2);
-    // startNode.calcDst();
 
     // put into grid
     let startIntxn: RoadIntersection
@@ -139,21 +134,53 @@ class RoadLSystem {
         } else {
           // do real stuff
           let ti = this.terrainInfo.getHeightAndDisScaleShift(
-            curNode.dstPos[0], curNode.dstPos[2],
-            100);
+            curNode.dstPos[0], curNode.dstPos[2], this.scale);
+          // console.log("ti: " + ti);
           if (curNode.isHeightWay) {
             // highway and normal node are different
             this.roadSet.add(curNode);  
-            
-            // if is sea, can still forward
-            //  use same origin, but different dst
-            //  when out of bound, then kill
 
-            // if not sea, then create a normal road
+            // only continue if in bound
+            if (ti[1] >= 0) {
+              if (ti[0] > TerrainInfo.heightThreshold) {
+                // if not sea
+                // create self extend
+                let mostPopDir = this.highwaySearchMostPopulationDir(
+                  vec2.fromValues(curNode.dstPos[0], curNode.dstPos[2]),
+                  this.highwaySearchRadius,
+                  this.highwaySearchAngleRange,
+                  curNode.intendAngle);
+
+                let dst: vec3 = vec3.fromValues(
+                  mostPopDir[0] * this.highwayLen + curNode.dstPos[0],
+                  this.levitation,
+                  mostPopDir[1] * this.highwayLen + curNode.dstPos[2],
+                );
+                let highwayNode = RoadLSystemNode.createHighway(
+                  0, // ID
+                  0, // del
+                  curNode.dstPos, // src
+                  dst // dst
+                );
+                list.insertBefore(curNode, highwayNode);
+
+                let curIntxn: RoadIntersection
+                = RoadIntersection.createAndPutToCell(curNode.dstPos, this);
+                
+                this.intxnSet.add(curIntxn);
 
 
 
 
+
+
+                // create a normal road / intxn, kill
+
+              } else {
+                // if is sea, can still forward
+                //  use same origin, but different dst
+              }
+            }
           } else {
             // if this place can have a road
             // use x-z as x-y
@@ -183,7 +210,9 @@ class RoadLSystem {
               // only add node to global set when node is legal
               this.roadSet.add(curNode);   
   
-              if (goOnFlag) {    
+              if (goOnFlag) { 
+                // TODO(zichuanyu) add out road
+                // may need to delete road from inside the node
                 // this node continues to go forward
                 let subNode: RoadLSystemNode = RoadLSystemNode.create(
                   list.length(), // id
@@ -383,6 +412,7 @@ function fillIntxnArrayCallback(intxn: RoadIntersection) {
   this.intxnRotArray.push(q[3]);
 
   this.intxnLenArray.push(1.0);
+  this.intxnWidthArray.push(1.0);
 }
 
 // every node has a source intersection and dst intersection
@@ -458,13 +488,16 @@ class RoadLSystemNode {
     return node;
   }
 
-  static createHighway(id: number, del: number, src: vec3, target: vec3): RoadLSystemNode {
+  static createHighway(id: number, del: number, src: vec3, dst: vec3): RoadLSystemNode {
     let node: RoadLSystemNode = new RoadLSystemNode();
     node.id = id;
     node.del = del;
     node.srcPos = vec3.clone(src);
-    node.calcAngle(target);
+    // console.log("dst in crhi: " + dst);
+    node.calcAngle(dst);
     node.isHeightWay = true;
+    node.dstPos = vec3.clone(dst);
+    node.calcLen();
     return node;
   }
 
@@ -483,6 +516,11 @@ class RoadLSystemNode {
       this.srcPos[0] + this.intendLen * Math.sin(rad),
       this.srcPos[1],
       this.srcPos[2] + this.intendLen * Math.cos(rad));
+  }
+
+  // givern src and dst
+  calcLen() {
+    this.intendLen = vec3.distance(this.srcPos, this.dstPos);
   }
 
   // given src and dst
@@ -505,12 +543,17 @@ class RoadLSystemNode {
     vec3.sub(src2Target, target, this.srcPos);
     // 2 cases according to x value
     // VERF
+    // console.log("target: " + target);
+
+    // console.log("src2Target: " + src2Target);
     let angle = vec3.angle(RoadLSystem.GlobalZForward, src2Target) * 180 / Math.PI;
+    // console.log("angle: " + this.intendAngle);    
     if (src2Target[0] > 0) {
       this.intendAngle = angle;
     } else {
       this.intendAngle = -angle;
     }
+    // console.log("this.intendAngle: " + this.intendAngle);
   }
   
   detach() {

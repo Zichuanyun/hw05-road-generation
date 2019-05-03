@@ -46,24 +46,23 @@ uniform mat3 u_CameraAxes; // Used for rendering particles as billboards (quads 
 in vec4 vs_Pos; // Non-instanced; each particle is the same quad drawn in a different place
 in vec3 vs_Translate; // Another instance rendering attribute used to position each quad instance in the scene
 in float vs_Depth;
+in float vs_RoadLength;
+in float vs_RoadWidth;
 in vec4 vs_RotQuat;
-in vec4 vs_Nor;
 
 out vec4 fs_Col;
 out vec4 fs_Pos;
-out vec4 fs_Nor;
 
 void main()
 {
     fs_Col = vec4(1.0, 1.0, 0.0, 1.0);
+    float scale = 1.5;
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,
-        vec3(1.0)
+        vec3(scale, scale, scale)
     );
     vec4 worldPos = transformMat * vs_Pos;
-    fs_Nor = transformMat * vs_Nor;
-    fs_Nor = vs_Nor;
     gl_Position = u_ViewProj * worldPos;
     fs_Pos = gl_Position;
 }
