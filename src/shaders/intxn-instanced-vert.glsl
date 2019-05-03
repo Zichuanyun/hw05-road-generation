@@ -56,7 +56,7 @@ out vec4 fs_Pos;
 void main()
 {
     fs_Col = vec4(1.0, 1.0, 0.0, 1.0);
-    float scale = 1.5;
+    float scale = 0.8;
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,

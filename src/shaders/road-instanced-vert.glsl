@@ -60,7 +60,7 @@ void main()
     mat4 transformMat = constructTransformationMat(
         vs_Translate,
         vs_RotQuat,
-        vec3(taper, taper, vs_RoadLength * 0.9)
+        vec3(taper, taper, vs_RoadLength * 1.0)
     );
     vec4 worldPos = transformMat * vs_Pos;
     gl_Position = u_ViewProj * worldPos;

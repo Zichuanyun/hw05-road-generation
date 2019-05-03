@@ -52,7 +52,7 @@ class TerrainInfo {
         }
       }
     }
-    console.log("valid kernels: " + this.validKernelPos);
+    // console.log("valid kernels: " + this.validKernelPos);
   }
 
   // return a 0-1 pos
