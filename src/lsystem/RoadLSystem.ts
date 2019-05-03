@@ -139,6 +139,7 @@ class RoadLSystem {
       let curNode: RoadLSystemNode = list.head;
       // console.log("iter: " + i);
       while (curNode !== null) {
+        let detachFlag: Boolean = true;
         if (curNode.del > 0) {
           curNode.del -= 1;
         } else {
@@ -150,7 +151,7 @@ class RoadLSystem {
             // highway and normal node are different
             this.roadSet.add(curNode);  
 
-            // only continue if in bound
+            // only continue if in bound, if not in bound, leave it there
             if (ti[1] >= 0) {
               if (ti[0] > TerrainInfo.heightThreshold) {
                 // if not sea
@@ -177,18 +178,18 @@ class RoadLSystem {
                 let curIntxn: RoadIntersection
                 = RoadIntersection.createAndPutToCell(curNode.dstPos, this);
                 
+                
+
+                // TODO(zichuanyu) handle intxns
+                curIntxn.addInRoad(curNode);
+                curIntxn.addOutRoad(highwayNode)
+
                 this.intxnSet.add(curIntxn);
 
-
-
-
-
-
-                // create a normal road / intxn, kill
-
               } else {
-                // if is sea, can still forward
-                //  use same origin, but different dst
+                curNode.intendLen += this.highwayLen;
+                curNode.calcDst();
+                detachFlag = false;
               }
             }
           } else {
@@ -284,7 +285,9 @@ class RoadLSystem {
           // node has del==0, so no mater what, detach
           let preNode: RoadLSystemNode = curNode;
           curNode = curNode.next;
-          preNode.detach();
+          if (detachFlag) {
+            preNode.detach();
+          }
         }
       }
     }
