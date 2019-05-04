@@ -39,10 +39,9 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 20;
-  heightThreshold: number = 0.65;
+  iter: number = 50;
   angleTolerant: number = 10.0;
-  mergeToIntxnThreshold: number = 2.9;
+  mergeToIntxnThreshold: number = Math.min(this.maxZLen, this.maxXLen) - 0.1;
   mergeFrontierStep: number = this.mergeToIntxnThreshold * 1.1;
 
   roadWidth: number = 0.5;

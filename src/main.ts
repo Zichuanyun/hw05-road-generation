@@ -56,10 +56,10 @@ function updateBuffer() {
   let roadLengths: Float32Array = new Float32Array(roadLSystem.roadLenArray);
   let roadWidths: Float32Array = new Float32Array(roadLSystem.roadWidthArray);
   longCube.setInstanceVBOs(translates, rotQuats, roadLengths, roadWidths);
-  console.log("translates: " + translates.length);
-  console.log("rotQuats: " + rotQuats.length);
-  console.log("roadLengths: " + roadLengths.length);
-  console.log("roadWidths: " + roadWidths.length);
+  // console.log("translates: " + translates.length);
+  // console.log("rotQuats: " + rotQuats.length);
+  // console.log("roadLengths: " + roadLengths.length);
+  // console.log("roadWidths: " + roadWidths.length);
 
   longCube.setNumInstances(roadLengths.length);
 
@@ -70,17 +70,17 @@ function updateBuffer() {
   let intxnWidths: Float32Array = new Float32Array(roadLSystem.intxnWidthArray);
   
   longCube2.setInstanceVBOs(intxnTranslates, intxnRotQuats, intxnLengths, intxnWidths);
-  console.log("intxnLengths: " + intxnLengths.length);  
+  // console.log("intxnLengths: " + intxnLengths.length);  
   longCube2.setNumInstances(intxnLengths.length);
 
 }
 
 function writeGuiInfo() {
   console.log("controls: " + controls['block max x size']);
-  sysInfo.maxXSize = controls['block max x size'];
-  sysInfo.maxZSize = controls['block max z size'];
+  roadLSystem.maxXLen = controls['block max x size'];
+  roadLSystem.maxZLen = controls['block max z size'];
   sysInfo.globalSeed = controls['seed'];
-  sysInfo.mapWidthHeightRatio = controls['width height ratio'];
+  TerrainInfo.heightThreshold = controls['amount of sea'];
 }
 
 function guiChangeCallback() {
@@ -100,9 +100,9 @@ function guiChangeCallback() {
 
 const controls = {
   'seed': 'se',
-  'block max x size': 1,
-  'block max z size': 0.8,
-  'width height ratio': 1,
+  'block max x size': 6,
+  'block max z size': 3,
+  'amount of sea': 0.35,
 };
 
 function main() {
@@ -110,14 +110,12 @@ function main() {
   const gui = new DAT.GUI();
 
   gui.add(controls, 'seed', 'seed').onFinishChange(guiChangeCallback);
-  gui.add(controls, 'block max x size', 0, 2).step(0.05).onFinishChange(guiChangeCallback);
-  gui.add(controls, 'block max z size', 0, 2).step(0.05).onFinishChange(guiChangeCallback);  
-  gui.add(controls, 'width height ratio', 1, 10).step(0.5).onFinishChange(guiChangeCallback);  
-  writeGuiInfo();
-
+  gui.add(controls, 'block max x size', 3, 10).step(0.05).onFinishChange(guiChangeCallback);
+  gui.add(controls, 'block max z size', 3, 10).step(0.05).onFinishChange(guiChangeCallback);  
+  gui.add(controls, 'amount of sea', 0, 1).step(0.01).onFinishChange(guiChangeCallback);  
   trInfo = new TerrainInfo(sysInfo);
-
   roadLSystem = new RoadLSystem(sysInfo, trInfo);
+  writeGuiInfo();
   roadLSystem.compute();
 
 
