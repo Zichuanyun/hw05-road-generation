@@ -39,10 +39,9 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 10;
+  iter: number = 20;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
-  initAngle: number = 45;
   mergeToIntxnThreshold: number = 2.9;
   mergeFrontierStep: number = this.mergeToIntxnThreshold * 1.1;
 
@@ -55,6 +54,7 @@ class RoadLSystem {
   highwaySearchAngleRange: number = 60;
   popSearchSpacialSampleRage: number = 5;
   popSearchAngularSampleRage: number = 5;
+  highwayBranchPopThreshold: number = 0.8; // if higher than this, highway branch
 
   // end need export -------------------------------------------------
   constructor(si: SystemInfoObject, ti: TerrainInfo) {
@@ -71,7 +71,6 @@ class RoadLSystem {
   }
   
   compute() {
-    RoadLSystemNode.initAngle = this.initAngle;
     // zero out all members
     this.intxnSet.clear();
     this.roadSet.clear();
@@ -135,42 +134,40 @@ class RoadLSystem {
 
     list.append(startNode);
 
+    // let testNode_0: RoadLSystemNode = RoadLSystemNode.create(
+    //   list.length(), // id
+    //   0, // del
+    //   startIntxn.pos, // srcPos
+    //   0, // prev angle
+    //   0, // prev angle
+    //   0 // angleOptionOffset
+    // );
 
+    // if (testNode_0.angleOption == 0 || testNode_0.angleOption == 2) {
+    //   testNode_0.intendLen = this.maxZLen;
+    // } else {
+    //   testNode_0.intendLen = this.maxXLen;
+    // }
+    // testNode_0.calcDst();
 
-    let testNode_0: RoadLSystemNode = RoadLSystemNode.create(
-      list.length(), // id
-      0, // del
-      startIntxn.pos, // srcPos
-      0, // prev angle
-      0, // prev angle
-      0 // angleOptionOffset
-    );
+    // let pos2: vec3 = vec3.fromValues(5, 0, 5);
+    // vec3.add(pos2, pos2, startIntxn.pos);
 
-    if (testNode_0.angleOption == 0 || testNode_0.angleOption == 2) {
-      testNode_0.intendLen = this.maxZLen;
-    } else {
-      testNode_0.intendLen = this.maxXLen;
-    }
-    testNode_0.calcDst();
+    // let testNode_1: RoadLSystemNode = RoadLSystemNode.create(
+    //   list.length(), // id
+    //   0, // del
+    //   pos2, // srcPos
+    //   0, // prev angle
+    //   0, // prev angle
+    //   0 // angleOptionOffset
+    // );
 
-    let pos2: vec3 = vec3.fromValues(5, 0, 5);
-    vec3.add(pos2, pos2, startIntxn.pos);
-
-    let testNode_1: RoadLSystemNode = RoadLSystemNode.create(
-      list.length(), // id
-      0, // del
-      pos2, // srcPos
-      0, // prev angle
-      0, // prev angle
-      0 // angleOptionOffset
-    );
-
-    if (testNode_1.angleOption == 0 || testNode_1.angleOption == 2) {
-      testNode_0.intendLen = this.maxZLen;
-    } else {
-      testNode_0.intendLen = this.maxXLen;
-    }
-    testNode_1.calcDst();
+    // if (testNode_1.angleOption == 0 || testNode_1.angleOption == 2) {
+    //   testNode_0.intendLen = this.maxZLen;
+    // } else {
+    //   testNode_0.intendLen = this.maxXLen;
+    // }
+    // testNode_1.calcDst();
 
     // list.append(testNode_1);
     // list.append(testNode_0);
@@ -197,7 +194,7 @@ class RoadLSystem {
             this.roadSet.add(curNode);  
 
             // only continue if in bound, if not in bound, leave it there
-            if (ti[1] >= 0) {
+            if (ti[0] >= 0) {
               if (ti[0] > TerrainInfo.heightThreshold) {
                 // if not sea
                 // create self extend
@@ -222,28 +219,67 @@ class RoadLSystem {
 
                 let curIntxn: RoadIntersection
                 = RoadIntersection.createAndPutToCell(curNode.dstPos, this);
-                
-                // new node 0
-                let branch_0: RoadLSystemNode = RoadLSystemNode.create(
-                  list.length(), // id
-                  0, // del
-                  curNode.dstPos, // srcPos
-                  curNode.baseAngle, // prev angle
-                  curNode.angleOption, // prev angle
-                  1 // angleOptionOffset
-                );
-                if (branch_0.angleOption == 0 || branch_0.angleOption == 2) {
-                  branch_0.intendLen = this.maxXLen;
-                } else {
-                  branch_0.intendLen = this.maxZLen;
-                }
-                branch_0.calcDst();
-                list.insertBefore(curNode, branch_0); 
 
-                // TODO(zichuanyu) handle intxns
+                // TODO(zichuanyu) adjust to threshold
+                if (1 - ti[1] > this.highwayBranchPopThreshold) {
+                  // exceed pop threshold, generate 2 highway
+                  // VERF
+                  let perpendicularDir_0: vec2 = vec2.create();
+                  vec2.rotate(perpendicularDir_0, mostPopDir, vec2.fromValues(0, 0), Math.PI / 2.0);
+                  let branchDst_0: vec3 = vec3.fromValues(
+                    perpendicularDir_0[0] * this.highwayLen + curNode.dstPos[0],
+                    this.levitation,
+                    perpendicularDir_0[1] * this.highwayLen + curNode.dstPos[2],
+                  );
+                  let highwayBranch_0 = RoadLSystemNode.createHighway(
+                    0, // ID
+                    0, // del
+                    curNode.dstPos, // src
+                    branchDst_0 // dst
+                  );
+
+                  let perpendicularDir_1: vec2 = vec2.create();
+                  vec2.rotate(perpendicularDir_1, mostPopDir, vec2.fromValues(0, 0), -Math.PI / 2.0);
+                  let branchDst_1: vec3 = vec3.fromValues(
+                    perpendicularDir_1[0] * this.highwayLen + curNode.dstPos[0],
+                    this.levitation,
+                    perpendicularDir_1[1] * this.highwayLen + curNode.dstPos[2],
+                  );
+                  let highwayBranch_1 = RoadLSystemNode.createHighway(
+                    0, // ID
+                    0, // del
+                    curNode.dstPos, // src
+                    branchDst_1 // dst
+                  );
+                  
+                  curIntxn.addOutRoad(highwayBranch_0);
+                  curIntxn.addOutRoad(highwayBranch_1);
+                  list.insertBefore(curNode, highwayBranch_0);
+                  list.insertBefore(curNode, highwayBranch_1);
+                } else {
+                  // if not exceed pop threshold, generate one normal raod
+                  let branch_0: RoadLSystemNode = RoadLSystemNode.create(
+                    list.length(), // id
+                    i * 5, // del
+                    curNode.dstPos, // srcPos
+                    curNode.intendAngle, // prev angle
+                    curNode.angleOption, // prev angle
+                    1 // angleOptionOffset
+                  );
+                  if (branch_0.angleOption == 0 || branch_0.angleOption == 2) {
+                    branch_0.intendLen = this.maxXLen;
+                  } else {
+                    branch_0.intendLen = this.maxZLen;
+                  }
+                  branch_0.calcDst();
+                  list.insertBefore(curNode, branch_0);
+                  curIntxn.addOutRoad(branch_0)
+                }
+                 
+
                 curIntxn.addInRoad(curNode);
                 curIntxn.addOutRoad(highwayNode);
-                curIntxn.addOutRoad(branch_0);
+
 
                 this.intxnSet.add(curIntxn);
 
@@ -289,7 +325,7 @@ class RoadLSystem {
               }
   
               if (potentialIntxn != null && disToIntxn < this.mergeToIntxnThreshold) {
-                // TODO(zichuanyun) adjust dir
+                // adjust dir and len if a intxn if found
                 curNode.setDstPos(potentialIntxn.pos);
                 curNode.intendLen = vec3.distance(curNode.srcPos, curNode.dstPos);
                 curNode.calcAngle(curNode.dstPos);
@@ -306,7 +342,6 @@ class RoadLSystem {
               this.roadSet.add(curNode);   
   
               if (goOnFlag) { 
-                // TODO(zichuanyu) add out road
                 // may need to delete road from inside the node
                 // this node continues to go forward
                 let subNode: RoadLSystemNode = RoadLSystemNode.create(
@@ -323,6 +358,7 @@ class RoadLSystem {
                   subNode.intendLen = this.maxXLen;
                 }
                 subNode.calcDst();
+                potentialIntxn.addOutRoad(subNode);
                 list.insertBefore(curNode, subNode);
   
                 // new node 0
@@ -340,6 +376,7 @@ class RoadLSystem {
                   branch_0.intendLen = this.maxXLen;
                 }
                 branch_0.calcDst();
+                potentialIntxn.addOutRoad(branch_0);
                 list.insertBefore(curNode, branch_0); 
   
                 // new node 1
@@ -357,12 +394,9 @@ class RoadLSystem {
                   branch_1.intendLen = this.maxXLen;
                 }
                 branch_1.calcDst();
+                potentialIntxn.addOutRoad(branch_1);
                 list.insertBefore(curNode, branch_1); 
   
-              } else {
-                // TODO(zichuanyu) adjust, no more road is created (may create intxn)
-                // only when adjust is successful, add to roadSet
-                
               }
             }
           }
@@ -497,7 +531,7 @@ function fillRoadArrayCallback(node: RoadLSystemNode) {
   }
   this.roadWidthArray.push(width);
 
-  console.log("base angle: " + node.baseAngle);
+  // console.log("base angle: " + node.baseAngle);
 }
 
 function fillIntxnArrayCallback(intxn: RoadIntersection) {
@@ -545,13 +579,12 @@ class RoadIntersection {
 // because we don't want a lot of copy and paste between memory
 class RoadLSystemNode {
   // the standard rotation
-  static initAngle: number = 30;
   static angleOptions = [0, 90, 180, 270];
   
   id: number = 0;
   angleOption: number = 0;
   prevAngleOption: number = 0;
-  baseAngle: number = RoadLSystemNode.initAngle;
+  baseAngle: number = 0;
   intendAngle: number = 0;
   // the node system
   del: number;
@@ -575,7 +608,6 @@ class RoadLSystemNode {
     // let option: number = ((offset) % 4 + 4)%4;
 
     this.angleOption = option;
-    // can use prevAngle or initAngle
     this.intendAngle = this.baseAngle
     + RoadLSystemNode.angleOptions[option];
   }
@@ -666,10 +698,6 @@ class RoadLSystemNode {
   
   toString(): string {
     return this.id.toString();
-  }
-
-  rotateDegree(deg: number) {
-    // TODO(zichuanyu) think more
   }
 }
 
