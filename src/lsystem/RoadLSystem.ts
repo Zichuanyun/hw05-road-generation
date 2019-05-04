@@ -12,6 +12,7 @@ import { timingSafeEqual } from 'crypto';
 // z
 
 
+
 class RoadLSystem {
   si: SystemInfoObject;
   terrainInfo: TerrainInfo;
@@ -38,17 +39,18 @@ class RoadLSystem {
   maxZLen: number = 6;
   maxXLen: number = 3;
   scale: number = 100;
-  iter: number = 7;
+  iter: number = 10;
   heightThreshold: number = 0.65;
   angleTolerant: number = 10.0;
   initAngle: number = 45;
-  mergeToIntxnThreshold = 2;
+  mergeToIntxnThreshold: number = 2.9;
+  mergeFrontierStep: number = this.mergeToIntxnThreshold * 1.1;
 
   roadWidth: number = 0.5;
 
   // highway
   highwayWidth: number = 1.5;
-  highwayLen: number = 10;
+  highwayLen: number = 13;
   highwaySearchRadius: number = 10;
   highwaySearchAngleRange: number = 60;
   popSearchSpacialSampleRage: number = 5;
@@ -110,7 +112,7 @@ class RoadLSystem {
 
     // choose dir according to population
     let mostPopDir = this.highwaySearchMostPopulationDir(startP,
-      this.highwaySearchRadius, this.highwaySearchAngleRange,
+      this.highwaySearchRadius, 360,
       startNode.intendAngle);
     startNode.setDstPos(vec3.fromValues(mostPopDir[0]*startNode.intendLen + startP[0],
                                         this.levitation,
@@ -132,6 +134,50 @@ class RoadLSystem {
     this.intxnSet.add(startIntxn);
 
     list.append(startNode);
+
+
+
+    let testNode_0: RoadLSystemNode = RoadLSystemNode.create(
+      list.length(), // id
+      0, // del
+      startIntxn.pos, // srcPos
+      0, // prev angle
+      0, // prev angle
+      0 // angleOptionOffset
+    );
+
+    if (testNode_0.angleOption == 0 || testNode_0.angleOption == 2) {
+      testNode_0.intendLen = this.maxZLen;
+    } else {
+      testNode_0.intendLen = this.maxXLen;
+    }
+    testNode_0.calcDst();
+
+    let pos2: vec3 = vec3.fromValues(5, 0, 5);
+    vec3.add(pos2, pos2, startIntxn.pos);
+
+    let testNode_1: RoadLSystemNode = RoadLSystemNode.create(
+      list.length(), // id
+      0, // del
+      pos2, // srcPos
+      0, // prev angle
+      0, // prev angle
+      0 // angleOptionOffset
+    );
+
+    if (testNode_1.angleOption == 0 || testNode_1.angleOption == 2) {
+      testNode_0.intendLen = this.maxZLen;
+    } else {
+      testNode_0.intendLen = this.maxXLen;
+    }
+    testNode_1.calcDst();
+
+    // list.append(testNode_1);
+    // list.append(testNode_0);
+
+
+
+
 
     // production & drawing
     for (var i = 0; i < this.iter; ++i) {
@@ -180,9 +226,9 @@ class RoadLSystem {
                 // new node 0
                 let branch_0: RoadLSystemNode = RoadLSystemNode.create(
                   list.length(), // id
-                  10, // del
+                  0, // del
                   curNode.dstPos, // srcPos
-                  curNode.intendAngle, // prev angle
+                  curNode.baseAngle, // prev angle
                   curNode.angleOption, // prev angle
                   1 // angleOptionOffset
                 );
@@ -193,23 +239,6 @@ class RoadLSystem {
                 }
                 branch_0.calcDst();
                 list.insertBefore(curNode, branch_0); 
-  
-                // // new node 1
-                // let branch_1: RoadLSystemNode = RoadLSystemNode.create(
-                //   list.length(), // id
-                //   0, // del
-                //   curNode.dstPos, // srcPos
-                //   curNode.intendAngle, // prev angle
-                //   curNode.angleOption, // prev angle
-                //   -1 // angleOptionOffset
-                // );
-                // if (branch_1.angleOption == 0 || branch_1.angleOption == 2) {
-                //   branch_1.intendLen = this.maxZLen;
-                // } else {
-                //   branch_1.intendLen = this.maxXLen;
-                // }
-                // branch_1.calcDst();
-                // list.insertBefore(curNode, branch_1);
 
                 // TODO(zichuanyu) handle intxns
                 curIntxn.addInRoad(curNode);
@@ -229,7 +258,29 @@ class RoadLSystem {
             // use x-z as x-y
             if (ti[0] > TerrainInfo.heightThreshold) {
               // consider the intxn grid
-              let potentialIntxn: RoadIntersection = this.findNearestIntxn(curNode.dstPos);
+              let potentialIntxn: RoadIntersection = null;
+
+              // step froward the merge threshold
+              let frontierDis: number = 0;
+              let frontierDir: vec3 = vec3.create();
+              vec3.sub(frontierDir, curNode.dstPos, curNode.srcPos);
+              vec3.normalize(frontierDir, frontierDir);
+              while (true) {
+                let breakFlag: boolean = false;
+                frontierDis += this.mergeFrontierStep;
+                if (frontierDis > curNode.intendLen) {
+                  frontierDis = curNode.intendLen;
+                  breakFlag = true;
+                }
+                let frontierPos: vec3 = vec3.create();
+                vec3.scaleAndAdd(frontierPos, curNode.srcPos,
+                  frontierDir, frontierDis);
+                  potentialIntxn = this.findNearestIntxn(curNode.dstPos);
+                if (potentialIntxn != null || breakFlag) {
+                  break;
+                }
+              }
+              
               let disToIntxn: number = this.scale; // max at first
               let goOnFlag: boolean = true;
               if (potentialIntxn != null) {
@@ -241,6 +292,7 @@ class RoadLSystem {
                 // TODO(zichuanyun) adjust dir
                 curNode.setDstPos(potentialIntxn.pos);
                 curNode.intendLen = vec3.distance(curNode.srcPos, curNode.dstPos);
+                curNode.calcAngle(curNode.dstPos);
                 potentialIntxn.addInRoad(curNode);
                 goOnFlag = false;
               } else {
@@ -261,7 +313,7 @@ class RoadLSystem {
                   list.length(), // id
                   0, // del
                   curNode.dstPos, // srcPos
-                  curNode.intendAngle, // prev angle
+                  curNode.baseAngle, // prev angle
                   curNode.angleOption, // prev angle
                   0 // angleOptionOffset
                 );
@@ -278,7 +330,7 @@ class RoadLSystem {
                   list.length(), // id
                   0, // del
                   curNode.dstPos, // srcPos
-                  curNode.intendAngle, // prev angle
+                  curNode.baseAngle, // prev angle
                   curNode.angleOption, // prev angle
                   1 // angleOptionOffset
                 );
@@ -295,7 +347,7 @@ class RoadLSystem {
                   list.length(), // id
                   0, // del
                   curNode.dstPos, // srcPos
-                  curNode.intendAngle, // prev angle
+                  curNode.baseAngle, // prev angle
                   curNode.angleOption, // prev angle
                   -1 // angleOptionOffset
                 );
@@ -402,10 +454,10 @@ class RoadLSystem {
       for (var n = -1; n <= 1; ++n) {
         var xm = x + m;
         var ym = y + n;
-        if (xm < 0 || xm > this.gridDim || ym < 0 || ym > this.gridDim) {
+        if (xm < 0 || xm >= this.gridDim || ym < 0 || ym >= this.gridDim) {
           continue;
         }
-        let arrInCell: Array<RoadIntersection> = this.intxnGrid[x][y];
+        let arrInCell: Array<RoadIntersection> = this.intxnGrid[xm][ym];
         for (var i = 0; i < arrInCell.length; ++i) {
           let curIntxn: RoadIntersection = arrInCell[i];
           let curLen: number = vec3.distance(curIntxn.pos, dstPos);
@@ -444,6 +496,8 @@ function fillRoadArrayCallback(node: RoadLSystemNode) {
     width = this.highwayWidth;
   }
   this.roadWidthArray.push(width);
+
+  console.log("base angle: " + node.baseAngle);
 }
 
 function fillIntxnArrayCallback(intxn: RoadIntersection) {
@@ -497,7 +551,7 @@ class RoadLSystemNode {
   id: number = 0;
   angleOption: number = 0;
   prevAngleOption: number = 0;
-  prevAngle: number = RoadLSystemNode.initAngle;
+  baseAngle: number = RoadLSystemNode.initAngle;
   intendAngle: number = 0;
   // the node system
   del: number;
@@ -522,17 +576,17 @@ class RoadLSystemNode {
 
     this.angleOption = option;
     // can use prevAngle or initAngle
-    this.intendAngle = this.prevAngle
+    this.intendAngle = this.baseAngle
     + RoadLSystemNode.angleOptions[option];
   }
 
   static create(id: number, del: number, src: vec3,
-    prevAngle: number, prevAngleOption: number, angleOptionOffset: number): RoadLSystemNode {
+    baseAngle: number, prevAngleOption: number, angleOptionOffset: number): RoadLSystemNode {
     let node: RoadLSystemNode = new RoadLSystemNode();
     node.id = id;
     node.del = del;
     node.srcPos = vec3.clone(src);
-    node.prevAngle = prevAngle;
+    node.baseAngle = baseAngle;
     node.prevAngleOption = prevAngleOption;
     node.chooseAngle(angleOptionOffset);
     return node;

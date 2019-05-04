@@ -4,7 +4,7 @@ var hash = require('object-hash');
 
 class TerrainInfo {
 
-  static heightThreshold: number = 0.25;
+  static heightThreshold: number = 0.0;
   private seed: number = 0;
   private ratio: number = 1;
   private tile: number = 5;
@@ -32,7 +32,8 @@ class TerrainInfo {
   }
 
   private randomVec2Vec2(uv: vec2): vec2 {
-    return vec2.fromValues(this.randomVec2F1(uv[0], uv[1]), this.randomVec2F1(uv[1], uv[0]));
+    return vec2.fromValues(this.randomVec2F1(uv[0] + 4.652636753, uv[1] + 56.79737658632),
+    this.randomVec2F1(uv[1] + 46372.465736724, uv[0] + 6563776.43761375));
   }
 
   constructor(si: SystemInfoObject) {
