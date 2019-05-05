@@ -23,5 +23,4 @@ void main()
     float diffuse = max(0.2, NdotL);
     out_Col = vec4(vec3(diffuse), 1.0);
     out_Col = vec4(vec3(fs_Col) * diffuse, 1.0);
-    out_Col = vec4(fs_Col);
 }

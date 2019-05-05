@@ -103,6 +103,7 @@ const controls = {
   'block max x size': 6,
   'block max z size': 3,
   'amount of sea': 0.35,
+  'debug view': 'non_debug',
 };
 
 function main() {
@@ -113,6 +114,7 @@ function main() {
   gui.add(controls, 'block max x size', 3, 10).step(0.05).onFinishChange(guiChangeCallback);
   gui.add(controls, 'block max z size', 3, 10).step(0.05).onFinishChange(guiChangeCallback);  
   gui.add(controls, 'amount of sea', 0, 1).step(0.01).onFinishChange(guiChangeCallback);  
+  gui.add(controls, 'debug view', ['non_debug', 'terrain_height', 'population', 'ground_sea']);
   trInfo = new TerrainInfo(sysInfo);
   roadLSystem = new RoadLSystem(sysInfo, trInfo);
   writeGuiInfo();
@@ -171,8 +173,38 @@ function main() {
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/lambert-frag.glsl')),
   ]);
 
+  const showTerrainHeightShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/show-terrain-height-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/pass-through-frag.glsl')),
+  ]);
+
+  const showGroundSeaShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/show-ground-sea-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/pass-through-frag.glsl')),
+  ]);
+
+  const showPopulationShader = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/show-population-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/pass-through-frag.glsl')),
+  ]);
+
+  
+
   // This function will be called every frame
   function tick() {
+    let showRoad: boolean = false;
+    let terrainShader: ShaderProgram;
+    if (controls['debug view'] == 'non_debug') {
+      terrainShader = showGroundSeaShader;
+      showRoad = true;
+    } else if (controls['debug view'] == 'terrain_height') {
+      terrainShader = showTerrainHeightShader;
+    } else if (controls['debug view'] == 'population'){
+      terrainShader = showPopulationShader;
+    } else if (controls['debug view'] == 'ground_sea') {
+      terrainShader = showGroundSeaShader;
+    }
+
     camera.update();
     // console.log(camera.position);
     // console.log(camera.forward);
@@ -183,18 +215,22 @@ function main() {
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     renderer.render(camera, flat, [screenQuad]);
-    renderer.render(camera, lambert, [
+
+    renderer.render(camera, terrainShader, [
       plane,
     ]);
 
-    // road
-    renderer.render(camera, instancedShader, [
-      longCube,
-    ]);
+    if (showRoad) {
+      // road
+      renderer.render(camera, instancedShader, [
+        longCube,
+      ]);
 
-    renderer.render(camera, instancedIntxnShader, [
-      longCube2,
-    ]);
+      renderer.render(camera, instancedIntxnShader, [
+        longCube2,
+      ]);
+    }
+    
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

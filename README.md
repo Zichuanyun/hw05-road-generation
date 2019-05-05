@@ -10,56 +10,69 @@ This project tries to generate a reasonable road and city rendering in pure proc
 
 ## Results
 
-- 一整张最后效果
-- 陆地高度图
-- 陆地和海洋图
-- 人口密度图
+Demo Link
+
+|Final Result|Terrain Height|
+|-|-|
+|![result](img/result_final.png)|![result](img/result_terrain_height.png)|
+
+|Ground and Sea|Population Density|
+|-|-|
+|![result](img/result_ground_sea.png)|![result](img/result_population.png)|
 
 ## Randomness
 
+All the random number / vector generation is ultimately based on this javescrpt random number generation:
+
+```
+private getHashInt(str: string): number {
+  var hash = 0, i, chr;
+  if (str.length === 0) return hash;
+  for (i = 0; i < str.length; i++) {
+    chr   = str.charCodeAt(i);
+    hash  = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+};
+```
+
+Credits to https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript.
+
+The hash uses a string seed specified at ui.
+
+```
+this.seed = hash.sha1(this.si.globalSeed);
+```
+
 ## Terrain and Population
+
 
 ### Terrain
 
+Terrain is generated using Worley noise. Each Worley cell has a pseudo random height:
+![result](img/result_terrain_height.png)
+
+Cells with height below certain threshold specified by user become sea area:
+![result](img/result_ground_sea.png)
+
 ### Population
 
+Population density is also generated using Worley noise. Area near the Worley Kernel has denser population:
+![result](img/result_population.png)
+
+## Road Generation
+
+Road generation is fully based on [Procedural Modeling of Cities](https://dl.acm.org/citation.cfm?id=383292), section 3.
+
+An extended L-system (as described in section 3.1) is implemented with the following features:
+
+- List-bode-based. During production, node->nodes is executed (instead of symbol->symbols).
+- Selfaware. The nodes contain attributes to be checked against existing roads on map, and decide what kind of node to append.
+- No "trutle". Similar with the Selfawareness feature, the roads are being created on the map while the abstruct list is being expanded. Each node contains the full attributes to create a road segment on map.
 
 ## Credits
 
 * [dat.gui](https://github.com/dataarts/dat.gui)
 * [Procedural Modeling of Cities](https://dl.acm.org/citation.cfm?id=383292)
 * [Real-time Procedural Generation of ‘Pseudo Infinite’ Cities](https://dl.acm.org/citation.cfm?doid=604471.604490)
-
-#### Basics
-
-|![albedo](img/albedo.gif)|![normal](img/normal.gif)|![lighting](img/lighting.gif)|
-|-|-|-|
-|Albedo|Normal|Lambert + Blinn-phong|
-
-#### Line and point rendering
-
-|![line_render](img/line_render.gif)|![point_render](img/point_render.gif)|
-|-|-|
-|Line|Point|
-
-#### Perspective correct UV and bilinear texture 
-
-|![incorrect_uv](img/incorrect_uv.gif)|![correct_uv](img/correct_uv.gif)|
-|-|-|
-|Incorrect UV|Correct UV|
-
-### Performance Analysis
-
-#### Time spent in each stage
-
-To give guarantee enough operations for each step, all the features are turned on.
-
-![breakdown](img/breakdown.png)
-
-We can clearly see that the more space an onject took the window, the more time is spent on rasterization. Rasterization in our implementation is of heavy work.
-
-#### Performance impact of backface culling
-
-![fps](img/fps.png)
-
-As we can see, there's no significant improvement after we add backface culling (even drawbacks). This indicate that in our naive implementation of backface culling (mainly the backface detection part) has more overhead than contribution in these models.
