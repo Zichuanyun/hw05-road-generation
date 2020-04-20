@@ -1,5 +1,7 @@
 # Procedural Road and City Generation
 
+[Live Demo](https://zichuanyun.github.io/road-and-city-generation/)
+
 This project tries to generate a reasonable road and city rendering in pure procedural way. The base terrain and population are based on cellular noise (Worley noise). The roads and buildings are generated based on the population.
 
 **University of Pennsylvania, CIS 566 Procedrual Graphics, Procedural Road and City Generation**
@@ -9,8 +11,6 @@ This project tries to generate a reasonable road and city rendering in pure proc
 * Tested on: Macbook Pro macOS High Sierra Version 10.13.6 (17G66), i7-4870HQ @ 2.50GHz 16GB, AMD Radeon R9 M370X 2048 MB, Intel Iris Pro 1536 MB
 
 ## Results
-
-Demo Link
 
 |Final Result|Terrain Height|
 |-|-|
